@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чек-лист наличия образцов (офлайн)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .item img { 
+            width: 80px; 
+            height: auto; 
+            display: block; 
+            margin: 5px 0; 
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .item img:hover { transform: scale(1.02); }
+        .item-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            flex-wrap: wrap;
+        }
+        .item-name { 
+            font-weight: bold; 
+            font-size: 14px; 
+            flex: 1; 
+            min-width: 150px;
+        }
+        .item-format { 
+            font-size: 12px; 
+            background: #e0e0e0; 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            color: #333;
+            white-space: nowrap;
+        }
+        .btn-group { display: flex; gap: 10px; margin-top: 5px; }
+        .btn-group button { flex: 1; padding: 8px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; }
+        .yes { background: #4CAF50; color: white; }
+        .no { background: #f44336; color: white; }
+        .selected-yes { background: #2E7D32; }
+        .selected-no { background: #B71C1C; }
+        #point_name, #point_address, #point_city, #point_coords, #manager {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        #point_address, #point_city, #point_coords {
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+        }
+        #point_coords { font-size: 14px; color: #555; }
+        .suggest-item, .manager-suggest-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .suggest-item:hover, .manager-suggest-item:hover { background: #f0f0f0; }
+        .suggest-item .name { font-weight: bold; }
+        .suggest-item .addr { font-size: 12px; color: #666; }
+        .suggest-item .coords { font-size: 11px; color: #aaa; margin-top: 2px; }
+        #suggest-list, #manager-suggest-list { background: white; border: 1px solid #ccc; max-height: 250px; overflow-y: auto; margin-top: 5px; display: none; }
+        .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-row input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; min-width: 150px; }
+        .search-row button { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            background: #FF9800; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            white-space: nowrap;
+        }
+        .search-row button:hover { background: #F57C00; }
+        #submitBtn { width: 100%; padding: 15px; background: #4CAF50; color: white; font-size: 18px; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; }
+        #submitBtn:hover { background: #388E3C; }
+        #result { margin-top: 20px; background: #e0e0e0; padding: 10px; border-radius: 5px; display: none; }
+        #result pre { white-space: pre-wrap; word-wrap: break-word; }
+        hr { margin: 20px 0; }
+        .copy-btn { margin-top: 10px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .copy-btn:hover { background: #0b7dda; }
+        .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px; padding: 5px 10px; background: #f5f5f5; border-left: 4px solid #2196F3; }
+
+        .stands-section {
+            margin: 20px 0 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .stands-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-around;
+        }
+        .stand-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            flex: 1 1 200px;
+            min-width: 180px;
+        }
+        .stand-item img {
+            width: 70px;
+            height: auto;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stand-item img:hover {
+            transform: scale(1.02);
+        }
+        .stand-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .stand-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .stand-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stand-control button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            background: #e0e0e0;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        .stand-control button:hover {
+            background: #ccc;
+        }
+        .stand-count {
+            width: 50px;
+            text-align: center;
+            padding: 4px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-overlay img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            cursor: default;
+        }
+        .modal-close {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+        .modal-close:hover { transform: scale(1.2); }
+
+        #comment {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+        }
+
+        #point-fields { display: none; }
+
+        /* Статус синхронизации и базы */
+        #sync-status {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 5px solid #ffc107;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        #sync-status .badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 50px;
+            padding: 2px 10px;
+            font-weight: bold;
+        }
+        #sync-status .badge.online { background: #28a745; }
+        #sync-btn, #refreshPointsBtn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #sync-btn:hover, #refreshPointsBtn:hover { background: #0069d9; }
+        #sync-btn:disabled { opacity: 0.6; cursor: default; }
+
+        #db-status {
+            font-size: 14px;
+            padding: 5px 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+            color: #495057;
+        }
+        #db-status.loaded { background: #d4edda; color: #155724; }
+        #db-status.error { background: #f8d7da; color: #721c24; }
+        #db-status.cached { background: #cce5ff; color: #004085; }
+
+        /* Стили для поиска артикулов */
+        #itemSearchContainer {
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+        #itemSearchContainer input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #itemSuggestList {
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 0;
+            border-radius: 0 0 5px 5px;
+            display: none;
+        }
+        .suggest-item .highlight-match {
+            font-weight: bold;
+            background: #ffeb3b;
+        }
+        .highlight-item {
+            animation: highlightPulse 1s ease 3;
+        }
+        @keyframes highlightPulse {
+            0% { background: #fff9c4; }
+            50% { background: #ffeb3b; }
+            100% { background: #fff9c4; }
+        }
+    </style>
+</head>
+<body>
+
+<h2>Отчёт по торговой точке</h2>
+
+<!-- Статус синхронизации и базы -->
+<div id="sync-status">
+    <span id="sync-message">📡 Статус: <span id="status-text">Ожидание</span></span>
+    <span>📦 Очередь: <span id="queue-count" class="badge">0</span></span>
+    <span id="db-status">🗄️ База: загрузка...</span>
+    <div>
+        <button id="refreshPointsBtn">🔄 Обновить базу</button>
+        <button id="sync-btn">📤 Синхронизировать</button>
+    </div>
+</div>
+
+<label for="search_input">Введите название, адрес или город:</label>
+<div class="search-row">
+    <input id="search_input" type="text" placeholder="Начните вводить...">
+    <button id="newPointBtn">➕ Новая точка</button>
+</div>
+<div id="suggest-list" class="suggest-list"></div>
+
+<!-- Поля точки -->
+<div id="point-fields">
+    <label for="point_name">Название точки:</label>
+    <input id="point_name" type="text" placeholder="Введите название..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5;" readonly>
+
+    <label for="point_address">Адрес:</label>
+    <input id="point_address" type="text" placeholder="Введите адрес..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
+
+    <label for="point_city">Город:</label>
+    <input id="point_city" type="text" placeholder="Введите город..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
+
+    <label for="point_coords">Координаты (широта, долгота):</label>
+    <input id="point_coords" type="text" placeholder="Например: 53.195, 50.100" style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
+</div>
+
+<label for="manager">Менеджер:</label>
+<input id="manager" type="text" placeholder="Введите фамилию..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; border:1px solid #ccc; border-radius:5px;">
+<div id="manager-suggest-list" class="suggest-list"></div>
+
+<hr>
+
+<!-- Заголовок "Наличие образцов" с лупой -->
+<div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+    <h3 style="margin: 0;">Наличие образцов</h3>
+    <span id="searchToggle" style="cursor: pointer; font-size: 24px; user-select: none;" title="Поиск по артикулам">🔍</span>
+</div>
+<div id="itemSearchContainer" style="display: none;">
+    <input type="text" id="itemSearchInput" placeholder="Введите артикул...">
+    <div id="itemSuggestList" class="suggest-list"></div>
+</div>
+
+<!-- Стенды -->
+<div class="stands-section">
+    <div class="section-title">Стенды</div>
+    <div class="stands-container">
+        <div class="stand-item">
+            <img src="https://static.tildacdn.com/tild3535-3466-4234-b739-343738623734/5278750716912667799.png" alt="Стенд гребенка" onclick="openImage(this.src)">
+            <div class="stand-info">
+                <span class="stand-name">Стенд «Гребенка»</span>
+                <div class="stand-control">
+                    <button class="stand-minus" data-target="stand1">−</button>
+                    <input type="number" id="stand1" class="stand-count" value="0" min="0" step="1">
+                    <button class="stand-plus" data-target="stand1">+</button>
+                </div>
+            </div>
+        </div>
+        <div class="stand-item">
+            <img src="https://static.tildacdn.com/tild6631-3564-4636-b539-363163313831/___1.jpg" alt="Стенд выкатной" onclick="openImage(this.src)">
+            <div class="stand-info">
+                <span class="stand-name">Стенд «Выкатной»</span>
+                <div class="stand-control">
+                    <button class="stand-minus" data-target="stand2">−</button>
+                    <input type="number" id="stand2" class="stand-count" value="0" min="0" step="1">
+                    <button class="stand-plus" data-target="stand2">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Кнопка "Нет выставки" -->
+<div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+    <button id="selectNoAllBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #f44336; color: white;">❌ Нет выставки</button>
+</div>
+
+<div id="checklist"></div>
+
+<label for="comment">Комментарий:</label>
+<textarea id="comment" rows="3" placeholder="Введите комментарий по точке..."></textarea>
+
+<button id="submitBtn">📤 Добавить в очередь и отправить (при наличии сети)</button>
+
+<div id="result">
+    <h4>Данные для отправки:</h4>
+    <pre id="output"></pre>
+    <button id="copyBtn" class="copy-btn">📋 Скопировать текст</button>
+</div>
+
+<!-- Модальное окно -->
+<div class="modal-overlay" id="imageModal">
+    <span class="modal-close" id="modalClose">&times;</span>
+    <img id="modalImage" src="" alt="Увеличенное изображение">
+</div>
+
+<script>
+    // =====================================================
+    // 0. ОБЁРТКА ДЛЯ INDEXEDDB (аналог localStorage)
+    // =====================================================
+    const idbStorage = {
+        _db: null,
+        _storeName: 'keyvalue',
+        _ready: null,
+
+        _init() {
+            if (this._ready) return this._ready;
+            this._ready = new Promise((resolve, reject) => {
+                const request = indexedDB.open('IdbStorageDB', 1);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(this._storeName)) {
+                        db.createObjectStore(this._storeName, { keyPath: 'key' });
+                    }
+                };
+                request.onsuccess = (event) => {
+                    this._db = event.target.result;
+                    resolve();
+                };
+                request.onerror = (event) => {
+                    console.error('Ошибка открытия IndexedDB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+            return this._ready;
+        },
+
+        async setItem(key, value) {
+            await this._init();
+            return new Promise((resolve, reject) => {
+                const tx = this._db.transaction([this._storeName], 'readwrite');
+                const store = tx.objectStore(this._storeName);
+                const req = store.put({ key, value: JSON.stringify(value) });
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        },
+
+        async getItem(key) {
+            await this._init();
+            return new Promise((resolve, reject) => {
+                const tx = this._db.transaction([this._storeName], 'readonly');
+                const store = tx.objectStore(this._storeName);
+                const req = store.get(key);
+                req.onsuccess = () => {
+                    const result = req.result;
+                    resolve(result ? JSON.parse(result.value) : null);
+                };
+                req.onerror = () => reject(req.error);
+            });
+        },
+
+        async removeItem(key) {
+            await this._init();
+            return new Promise((resolve, reject) => {
+                const tx = this._db.transaction([this._storeName], 'readwrite');
+                const store = tx.objectStore(this._storeName);
+                const req = store.delete(key);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        },
+
+        async clear() {
+            await this._init();
+            return new Promise((resolve, reject) => {
+                const tx = this._db.transaction([this._storeName], 'readwrite');
+                const store = tx.objectStore(this._storeName);
+                const req = store.clear();
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+    };
+
+    // =====================================================
+    // 1. НАСТРОЙКИ И ПОЛНЫЙ СПИСОК ТОВАРОВ
+    // =====================================================
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxblBdosmIJ8zDs7Dn-cBN3wqjsYcXeaNuyPK2i3tIbtiZ7UH5xyY5P0q0lV2IEgI7f/exec';
+    const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
+    const STORAGE_KEY_POINTS = 'offline_points_cache';
+    const STORAGE_KEY_QUEUE = 'offline_reports_queue';
+
+    // ================== ВСЕ АРТИКУЛЫ ==================
+    const itemsRaw = [
+        { name: 'MNLIT-11M\\B12503', image: 'https://static.tildacdn.com/stor6462-3231-4535-b366-306565393434/cdc4d5dd0fdd09d0cabe0e2fc17fca32.png', format: '60x120' },
+        { name: 'SKALA-21M\\B12909', image: 'https://static.tildacdn.com/stor3030-6366-4139-b666-383631613033/ed3dca6d7ac447665acdbb82f92c88a7.jpg', format: '60x120' },
+        { name: 'MNTYA-11P\\B12639', image: 'https://static.tildacdn.com/stor6339-3634-4432-b161-376533343630/25b2df7cba2853393bc66790e9ddad3d.jpg', format: '60x120' },
+        { name: 'STHYA-11P\\B12606', image: 'https://static.tildacdn.com/stor3064-6537-4932-b733-343734653833/3d53f3efef7d4b6ad07ad4434ddb0398.jpg', format: '60x120' },
+        { name: 'GLYBA-11P\\D12608', image: 'https://static.tildacdn.com/stor3262-3137-4661-a566-373038656361/68391440.jpg', format: '60x120' },
+        { name: 'MNLIT-12P\\D12602', image: 'https://static.tildacdn.com/stor6164-6264-4130-b433-643162653566/1d585fba404bb60fccbcd45b9082375e.png', format: '60x120' },
+        { name: 'AURA-11P\\D12603', image: 'https://static.tildacdn.com/stor6265-6664-4137-b132-663537663264/3e6f0c31a50f2593857539fba19637c9.jpg', format: '60x120' },
+        { name: 'AURA-12P\\D12607', image: 'https://static.tildacdn.com/stor3063-3565-4066-b031-333565616333/82abfbc37c7dadf5edca388a8d2d5a1a.jpg', format: '60x120' },
+        { name: 'HOLST-11P\\L12614', image: 'https://static.tildacdn.com/stor3934-3337-4637-b763-373738326339/493422845d403f3518431e635368958e.jpg', format: '60x120' },
+        { name: 'STHYA-12B\\L12719', image: 'https://static.tildacdn.com/stor3238-6432-4139-b735-616363346332/c9355e977e9359759f9f12e5953e69d3.jpg', format: '60x120' },
+        { name: 'MNRAL-21P\\L12630', image: 'https://static.tildacdn.com/stor6238-3765-4261-b631-343231336332/6b3dd070e8bb57e6e2a8d83ec9f93433.jpg', format: '60x120' },
+        { name: 'DPLMT-21P\\L12632', image: 'https://static.tildacdn.com/stor6166-3563-4437-a239-663438633032/03e3105ceae8465ce951d7e6e1e9d107.jpg', format: '60x120' },
+        { name: 'GRNUL-11M\\B12514', image: 'https://static.tildacdn.com/stor3836-3261-4335-b935-386634663134/8c981a820456ff6b0f953b75494c41e8.jpg', format: '60x120' },
+        { name: 'GRNUL-12M\\B12517', image: 'https://static.tildacdn.com/stor3333-3934-4962-b330-326338396130/803d74519ef7124210f383858dbc2168.jpg', format: '60x120' },
+        { name: 'PLATO-11K\\BJ12596', image: 'https://static.tildacdn.com/stor3762-6438-4634-b865-356432343262/73fe9983b8a85cf698016a9cb6d4f9b6.jpg', format: '60x120' },
+        { name: 'BRHAN-11K\\DJ12587', image: 'https://static.tildacdn.com/stor6431-6333-4434-b634-306163636435/3c1778a28c00119bc8bc50f350074ab6.jpg', format: '60x120' },
+        { name: 'CMENT-21M\\D12516', image: 'https://static.tildacdn.com/stor3039-3536-4164-b166-333336633130/3bfae5bb95c8318b74ebe89111c10731.jpg', format: '60x120' },
+        { name: 'PLATO-12K\\DJ12588', image: 'https://static.tildacdn.com/stor6161-6337-4661-a536-313064656561/47dd5492f474f20edce495473512ae5d.jpg', format: '60x120' },
+        { name: 'KRATR-21K\\DJ12590', image: 'https://static.tildacdn.com/stor3130-3662-4263-b866-356466326437/c54101386f46a3b700e01e4fdffad66c.jpg', format: '60x120' },
+        { name: 'SINNA-11K\\DJ12591', image: 'https://static.tildacdn.com/stor6237-3465-4232-a661-303964323565/3e98aba52e90f78a2b9cb04be7ab575a.jpg', format: '60x120' },
+        { name: 'SKALA-11K\\DJ12592', image: 'https://static.tildacdn.com/stor6234-3135-4937-a164-633030303362/83e045410c19959e90284efab68f7ce3.jpg', format: '60x120' },
+        { name: 'GLYBA-12K\\DJ12597', image: 'https://static.tildacdn.com/stor3338-6136-4735-b234-623936633262/eed59ca9935d6318c854d91c2990453a.jpg', format: '60x120' },
+        { name: 'HOLST-13P\\L12605', image: 'https://static.tildacdn.com/stor3361-3362-4630-a133-626531323037/066b0c90fc0ff23ff753fc1331885651.jpg', format: '60x120' },
+        { name: 'KRNVL-13M\\L12535', image: 'https://static.tildacdn.com/stor3839-6263-4735-a239-326265383831/d570afb6a87ef67c056d141b53729aa7.png', format: '60x120' },
+        { name: 'CANYN-12P\\B12645', image: 'https://static.tildacdn.com/stor6638-6630-4666-a632-316231663862/8a74032907cde5b0c37f380f1a93ce8b.jpg', format: '60x120' },
+        { name: 'TRDCY-12K\\BJ12590', image: 'https://static.tildacdn.com/stor3238-6330-4235-a538-353066393035/f203db54ad1df53e9cb09ce80fcbc87c.jpg', format: '60x120' },
+        { name: 'RUCHY-22K\\BJ12595', image: 'https://static.tildacdn.com/stor3731-6231-4337-b662-616639363365/9cf58f24c1aff92c08b912515728971e.jpg', format: '60x120' },
+        { name: 'PEPEL-12M\\L12502', image: 'https://static.tildacdn.com/stor3330-6439-4238-a364-376262316461/6420b463b6b09a6a9b0d55efdaa3bfdd.jpg', format: '60x120' },
+        { name: 'KARIR-11M\\L12528', image: 'https://static.tildacdn.com/stor3061-6666-4432-b365-333336323266/554df2c99caf70e06f4ae20c3bcfc629.jpg', format: '60x120' },
+        { name: 'CMENT-11M\\B60328', image: 'https://static.tildacdn.com/stor3536-6531-4565-a563-393137333465/476aefa6a179c9711fee1111a8b2af70.png', format: '60x60' },
+        { name: 'KRNVL-11M\\L60302(B60332)', image: 'https://static.tildacdn.com/stor3634-3330-4531-b332-386135633566/96cfe2bfbbc133d53a27da29b8ba68d6.jpg', format: '60x60' },
+        { name: 'MNTYA-12M\\B60325', image: 'https://static.tildacdn.com/stor6335-3565-4164-a562-313435313562/733a4762ed37ab6d8a3c2d47bedf1c41.png', format: '60x60' },
+        { name: 'STHYA-13M\\L60307', image: 'https://static.tildacdn.com/stor6639-3563-4361-a332-323132663830/9792edbf585a2c96d0ea031771279eb4.jpg', format: '60x60' },
+        { name: 'NUANS-11M\\B60303', image: 'https://static.tildacdn.com/stor3466-3930-4438-a136-323265366262/ce9d156328550761c1a0b434bda590f4.jpg', format: '60x60' },
+        { name: 'GRNUL-13M\\B60347', image: 'https://static.tildacdn.com/stor6235-6235-4763-b365-303032353865/8dabad251ea1290827893eee93d0cc51.jpg', format: '60x60' },
+        { name: 'DPLMT-22M\\B60315', image: 'https://static.tildacdn.com/stor3838-3161-4633-b636-376137323032/89b3a8184e46f095df3592871f27d415.jpg', format: '60x60' },
+        { name: 'TRDCY-11M\\B60304', image: 'https://static.tildacdn.com/stor6532-3966-4735-b661-386561643736/9b085a3b29e2a40f360f3a3f959a074a.jpg', format: '60x60' },
+        { name: 'CANYN-11M\\L60911', image: 'https://static.tildacdn.com/stor3432-3631-4233-b936-613332373262/bfec93c9dd70d4da07861d74fb4ac14f.jpg', format: '60x60' },
+        { name: 'HOLST-12M\\B60305', image: 'https://static.tildacdn.com/stor3563-3064-4439-b161-393235326137/cf6fd2f008f6bab98d4dd64c6ffdf5d3.jpg', format: '60x60' },
+        { name: 'RUCHY-21M\\B60329', image: 'https://static.tildacdn.com/stor3034-3434-4966-b239-653163333237/5e5bb31d879c8f41aed6cde2d5075f49.jpg', format: '60x60' },
+        { name: 'SINNA-12M\\D6313', image: 'https://static.tildacdn.com/stor3433-3131-4132-b435-663736333138/aca31b04ab7e9a84920344fb2bb08763.jpg', format: '60x60' },
+        { name: 'KRNVL-12M\\L60328', image: 'https://static.tildacdn.com/stor3535-6233-4637-a163-653631363762/81a7d589768332604e2d183259d19201.jpg', format: '60x60' },
+        { name: 'PEPEL-11M\\B60310', image: 'https://static.tildacdn.com/stor6562-6635-4138-b439-313261643862/8757cc89a8c7b097247e595625399c84.jpg', format: '60x60' },
+        { name: 'CMENT-22M\\L60309', image: 'https://static.tildacdn.com/stor6337-3761-4036-b566-633030333330/edb3f94e728a7a36d4e497101dee1b61.jpg', format: '60x60' },
+        { name: 'CMENT-12M\\L60308', image: 'https://static.tildacdn.com/stor6464-3766-4965-b136-363931373731/d66e82b158aec7dd0aa3a2126da46059.jpg', format: '60x60' },
+        { name: 'MNHRM-21M\\B60911', image: 'https://static.tildacdn.com/stor3434-6162-4439-b636-653565386664/b5c21273d6de9f6a33f66ec6a232b514.jpg', format: '60x60' },
+        { name: 'KRATR-22M\\L60311', image: 'https://static.tildacdn.com/stor3766-3731-4764-a534-333766326263/a5e8155e71eeb7aa6b5ae6a66c3dadaf.jpg', format: '60x60' },
+        { name: 'AURA-15P\\B60602', image: 'https://static.tildacdn.com/stor6232-3934-4763-a231-383134663534/125c6a943ed5e12e53187e0b45a5f479.png', format: '60x60' },
+        { name: 'MNLIT-13P\\B60613', image: 'https://static.tildacdn.com/stor6539-6635-4638-b031-313737656462/e9bd371ac83b74b471fcc2c6f36256f4.png', format: '60x60' },
+        { name: 'AURA-16P\\B60615', image: 'https://static.tildacdn.com/stor6561-6232-4865-b336-653364353735/28760c901ba04121026ed85f328202f0.png', format: '60x60' },
+        { name: 'TRDCY-13P\\L60605', image: 'https://static.tildacdn.com/stor3132-6263-4337-b266-666237343331/7a92823e36f0948e8821313a112d3150.png', format: '60x60' },
+        { name: 'MNLIT-14P\\L60607', image: 'https://static.tildacdn.com/stor3130-3133-4536-b338-643962353034/7b367ce5b0ec51f51a99cf876dcfde20.png', format: '60x60' },
+        { name: 'MNLIT-15P\\L60613', image: 'https://static.tildacdn.com/stor6231-6463-4939-b035-623733373864/6319cdb0e1d145bdc4bf31907359b211.png', format: '60x60' },
+        { name: 'TRDCY-14P\\L60629', image: 'https://static.tildacdn.com/stor3239-3337-4665-b364-633563393538/4c2df7b2d48986e1886123aef920c299.png', format: '60x60' },
+        { name: 'PSPCT-11R\\B60921', image: 'https://static.tildacdn.com/stor3231-3962-4632-b664-373861633430/88a15301eaf145a43a8fbee0f379b42d.jpg', format: '60x60' },
+        { name: 'PSPCT-21R\\B60924', image: 'https://static.tildacdn.com/stor6131-3362-4136-a263-383030663534/4a70ef73490d75e49c08525de7cf11ed.jpg', format: '60x60' },
+        { name: 'PSPCT-12R\\B60925', image: 'https://static.tildacdn.com/stor3833-3963-4863-a461-643336373461/0b922c66ada10e2496ab7f134c644714.jpg', format: '60x60' }
+    ];
+
+    // Расширенный резервный список точек
+    const FALLBACK_DATA = [
+        { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956 },
+        { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002 },
+        { name: 'OBI Самара', address: 'Самара, ул. Ново-Садовая, 106', city: 'Самара', lat: 53.2170, lon: 50.1420 }
+    ];
+
+    // =====================================================
+    // 2. РАБОТА С КЕШЕМ ТОЧЕК
+    // =====================================================
+    let pointsData = [];
+    let dataLoaded = false;
+    let isManual = false;
+
+    async function loadPointsFromCache() {
+        try {
+            const cached = await idbStorage.getItem(STORAGE_KEY_POINTS);
+            if (cached) {
+                pointsData = cached;
+                dataLoaded = true;
+                console.log(`📦 Загружено ${pointsData.length} точек из кеша (IndexedDB)`);
+                updateDbStatus('cached', `Кеш (${pointsData.length} точек)`);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.warn('Ошибка чтения кеша из IndexedDB:', e);
+            return false;
+        }
+    }
+
+    async function savePointsToCache(data) {
+        try {
+            await idbStorage.setItem(STORAGE_KEY_POINTS, data);
+            console.log('💾 Кеш точек сохранён в IndexedDB');
+        } catch (e) {
+            console.warn('Не удалось сохранить кеш в IndexedDB:', e);
+        }
+    }
+
+    function updateDbStatus(type, message) {
+        const el = document.getElementById('db-status');
+        el.textContent = '🗄️ ' + message;
+        el.className = type;
+    }
+
+    // Парсинг CSV
+    function parseCSV(csvText) {
+        csvText = csvText.replace(/^\uFEFF/, '');
+        const lines = csvText.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+
+        const headerLine = lines[0];
+        let delimiter = ';';
+        if (headerLine.includes('\t')) delimiter = '\t';
+        else if (headerLine.includes(';')) delimiter = ';';
+        else if (headerLine.includes(',')) delimiter = ',';
+
+        const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase());
+        let nameIdx = headers.findIndex(h => h.includes('название') || h.includes('name'));
+        let addrIdx = headers.findIndex(h => h.includes('адрес') || h.includes('address'));
+        let cityIdx = headers.findIndex(h => h.includes('город') || h.includes('city'));
+        let coordIdx = headers.findIndex(h => h.includes('координат') || h.includes('coord') || h.includes('lat'));
+
+        if (nameIdx === -1) nameIdx = 0;
+        if (addrIdx === -1) addrIdx = 1;
+        if (cityIdx === -1) cityIdx = 2;
+        if (coordIdx === -1) coordIdx = 3;
+
+        const result = [];
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(delimiter).map(c => c.trim());
+            if (cols.length < 4) continue;
+            const name = cols[nameIdx] || '';
+            const address = cols[addrIdx] || '';
+            const city = cols[cityIdx] || '';
+            const coordStr = cols[coordIdx] || '';
+
+            let lat = NaN, lon = NaN;
+            if (coordStr) {
+                let parts = coordStr.split(',').map(s => s.trim());
+                if (parts.length === 2) {
+                    lat = parseFloat(parts[0].replace(',', '.'));
+                    lon = parseFloat(parts[1].replace(',', '.'));
+                } else {
+                    parts = coordStr.split(/\s+/);
+                    if (parts.length >= 2) {
+                        lat = parseFloat(parts[0].replace(',', '.'));
+                        lon = parseFloat(parts[1].replace(',', '.'));
+                    }
+                }
+            }
+
+            if (name && address && !isNaN(lat) && !isNaN(lon)) {
+                result.push({ name, address, city, lat, lon });
+            }
+        }
+        return result;
+    }
+
+    // Загрузка из сети
+    async function loadPointsFromNetwork(showMessage = false) {
+        try {
+            console.log('⏳ Загрузка CSV с сервера...');
+            if (showMessage) updateDbStatus('', 'Загрузка...');
+            const response = await fetch(CSV_URL);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const csvText = await response.text();
+            const parsed = parseCSV(csvText);
+            if (parsed.length > 0) {
+                pointsData = parsed;
+                dataLoaded = true;
+                await savePointsToCache(pointsData);
+                console.log(`✅ Загружено ${pointsData.length} записей (сеть)`);
+                updateDbStatus('loaded', `Загружено ${pointsData.length} точек`);
+                return true;
+            }
+            throw new Error('Пустой CSV');
+        } catch (error) {
+            console.warn('⚠️ Не удалось загрузить CSV с сети:', error);
+            if (showMessage) {
+                updateDbStatus('error', 'Ошибка загрузки, используется резерв');
+            }
+            return false;
+        }
+    }
+
+    // Инициализация точек
+    async function initPoints() {
+        const hasCache = await loadPointsFromCache();
+        if (!hasCache) {
+            const ok = await loadPointsFromNetwork(true);
+            if (!ok) {
+                pointsData = FALLBACK_DATA;
+                dataLoaded = true;
+                await savePointsToCache(pointsData);
+                console.log('🔧 Используем расширенный резервный список');
+                updateDbStatus('error', `Резерв (${pointsData.length} точек)`);
+            }
+        } else {
+            if (navigator.onLine) {
+                try {
+                    await loadPointsFromNetwork(false);
+                } catch (e) { /* молча */ }
+            }
+        }
+    }
+
+    // =====================================================
+    // 3. ПОИСК ТОЧЕК (ВСТРОЕННЫЙ)
+    // =====================================================
+    function searchPoints(query) {
+        if (!query.trim()) return [];
+        const q = query.toLowerCase().trim();
+        const results = [];
+        for (const p of pointsData) {
+            const name = (p.name || '').toLowerCase();
+            const addr = (p.address || '').toLowerCase();
+            const city = (p.city || '').toLowerCase();
+            if (name.includes(q) || addr.includes(q) || city.includes(q)) {
+                results.push(p);
+            }
+            if (results.length >= 50) break;
+        }
+        results.sort((a, b) => {
+            const aName = (a.name || '').toLowerCase();
+            const bName = (b.name || '').toLowerCase();
+            const idxA = aName.indexOf(q);
+            const idxB = bName.indexOf(q);
+            if (idxA === -1 && idxB === -1) return 0;
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+        });
+        return results;
+    }
+
+    // =====================================================
+    // 4. ОЧЕРЕДЬ ОТЧЁТОВ
+    // =====================================================
+    async function getQueue() {
+        try {
+            const data = await idbStorage.getItem(STORAGE_KEY_QUEUE);
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            console.warn('Ошибка чтения очереди из IndexedDB:', e);
+            return [];
+        }
+    }
+
+    async function saveQueue(queue) {
+        try {
+            await idbStorage.setItem(STORAGE_KEY_QUEUE, queue);
+        } catch (e) {
+            console.warn('Не удалось сохранить очередь в IndexedDB:', e);
+        }
+    }
+
+    async function addReportToQueue(reportData) {
+        const queue = await getQueue();
+        queue.push({
+            ...reportData,
+            timestamp: new Date().toISOString(),
+            id: Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+        });
+        await saveQueue(queue);
+        await updateQueueUI();
+        return queue.length;
+    }
+
+    // =====================================================
+    // 5. ОТПРАВКА НА СЕРВЕР
+    // =====================================================
+    async function sendReportToServer(report) {
+        try {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(report)
+            });
+            return true;
+        } catch (error) {
+            console.error('Ошибка отправки:', error);
+            return false;
+        }
+    }
+
+    async function syncAllReports() {
+        const queue = await getQueue();
+        if (queue.length === 0) {
+            updateStatus('Нет отчётов для синхронизации', 'info');
+            return;
+        }
+        if (!navigator.onLine) {
+            updateStatus('Нет интернета – отложено', 'warning');
+            return;
+        }
+
+        updateStatus(`Синхронизация (${queue.length} шт.)...`, 'loading');
+        document.getElementById('sync-btn').disabled = true;
+
+        let successCount = 0;
+        const failedIds = [];
+
+        for (const report of queue) {
+            const ok = await sendReportToServer(report);
+            if (ok) {
+                successCount++;
+            } else {
+                failedIds.push(report.id);
+            }
+        }
+
+        if (successCount > 0) {
+            let newQueue = await getQueue();
+            newQueue = newQueue.filter(r => failedIds.includes(r.id));
+            await saveQueue(newQueue);
+        }
+
+        await updateQueueUI();
+        document.getElementById('sync-btn').disabled = false;
+
+        if (failedIds.length === 0) {
+            updateStatus(`✅ Все ${successCount} отчётов отправлены!`, 'success');
+        } else {
+            updateStatus(`⚠️ Отправлено ${successCount}, ${failedIds.length} не удалось (будут повторно)`, 'warning');
+        }
+    }
+
+    // =====================================================
+    // 6. ОБНОВЛЕНИЕ UI СТАТУСА
+    // =====================================================
+    async function updateQueueUI() {
+        const queue = await getQueue();
+        const count = queue.length;
+        document.getElementById('queue-count').textContent = count;
+        const badge = document.getElementById('queue-count');
+        badge.className = 'badge' + (count === 0 ? ' online' : '');
+        if (count === 0) {
+            document.getElementById('status-text').textContent = 'Всё синхронизировано';
+        } else {
+            document.getElementById('status-text').textContent = `Ожидает отправки (${count})`;
+        }
+    }
+
+    function updateStatus(msg, type = 'info') {
+        document.getElementById('status-text').textContent = msg;
+    }
+
+    // =====================================================
+    // 7. ЛОГИКА ФОРМЫ И ЧЕК-ЛИСТА
+    // =====================================================
+    (function() {
+        const searchInput = document.getElementById('search_input');
+        const newPointBtn = document.getElementById('newPointBtn');
+        const suggestList = document.getElementById('suggest-list');
+        const pointNameInput = document.getElementById('point_name');
+        const pointAddressInput = document.getElementById('point_address');
+        const pointCityInput = document.getElementById('point_city');
+        const pointCoordsInput = document.getElementById('point_coords');
+        const pointFields = document.getElementById('point-fields');
+        const managerInput = document.getElementById('manager');
+        const managerSuggestList = document.getElementById('manager-suggest-list');
+        const commentInput = document.getElementById('comment');
+        const checklistDiv = document.getElementById('checklist');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        const outputPre = document.getElementById('output');
+        const copyBtn = document.getElementById('copyBtn');
+        const syncBtn = document.getElementById('sync-btn');
+        const refreshPointsBtn = document.getElementById('refreshPointsBtn');
+
+        const managers = [
+            'Кошелев Дмитрий',
+            'Нигматулина Наталья',
+            'Измайлова Оксана',
+            'Мухтеремова Елена',
+            'Варламичев Данила',
+            'Балахонов Владислав',
+            'Пушин Дмитрий'
+        ];
+
+        // ========== ПОДСКАЗКИ МЕНЕДЖЕРОВ ==========
+        function filterManagers(query) {
+            if (!query.trim()) return managers.slice(0, 10);
+            const lower = query.toLowerCase();
+            return managers.filter(m => m.toLowerCase().includes(lower)).slice(0, 10);
+        }
+        function renderManagerSuggestions(items) {
+            if (items.length === 0) {
+                managerSuggestList.innerHTML = '<div style="padding:10px; color:#666;">Ничего не найдено</div>';
+                managerSuggestList.style.display = 'block';
+                return;
+            }
+            let html = '';
+            items.forEach(name => {
+                html += `<div class="manager-suggest-item" data-name="${name}">${name}</div>`;
+            });
+            managerSuggestList.innerHTML = html;
+            managerSuggestList.style.display = 'block';
+            managerSuggestList.querySelectorAll('.manager-suggest-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    managerInput.value = this.dataset.name;
+                    managerSuggestList.style.display = 'none';
+                });
+            });
+        }
+
+        managerInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length === 0) {
+                renderManagerSuggestions(managers);
+                return;
+            }
+            const filtered = filterManagers(query);
+            renderManagerSuggestions(filtered);
+        });
+        managerInput.addEventListener('focus', function() {
+            if (this.value.trim() === '') {
+                renderManagerSuggestions(managers);
+            } else {
+                const filtered = filterManagers(this.value);
+                renderManagerSuggestions(filtered);
+            }
+        });
+        managerInput.addEventListener('blur', function() {
+            setTimeout(() => { managerSuggestList.style.display = 'none'; }, 200);
+        });
+
+        // ========== НОВАЯ ТОЧКА ==========
+        newPointBtn.addEventListener('click', function() {
+            isManual = true;
+            pointNameInput.value = '';
+            pointAddressInput.value = '';
+            pointCityInput.value = '';
+            pointCoordsInput.value = '';
+            pointNameInput.readOnly = false;
+            pointAddressInput.readOnly = false;
+            pointCityInput.readOnly = false;
+            pointCoordsInput.readOnly = false;
+            pointAddressInput.style.background = '#fff';
+            pointCityInput.style.background = '#fff';
+            pointCoordsInput.style.background = '#fff';
+            pointNameInput.focus();
+            suggestList.style.display = 'none';
+            searchInput.value = '';
+            pointFields.style.display = 'block';
+        });
+
+        // ========== ПОИСК ТОЧЕК ==========
+        let searchTimer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            const query = this.value.trim();
+            if (query.length < 1) {
+                suggestList.style.display = 'none';
+                return;
+            }
+            searchTimer = setTimeout(() => {
+                performSearch(query);
+            }, 150);
+        });
+
+        function performSearch(query) {
+            if (!dataLoaded) {
+                suggestList.innerHTML = '<div style="padding:10px; color:#666;">⏳ Данные загружаются...</div>';
+                suggestList.style.display = 'block';
+                return;
+            }
+            const results = searchPoints(query);
+            if (results.length === 0) {
+                suggestList.innerHTML = '<div style="padding:10px; color:#666;">Ничего не найдено</div>';
+                suggestList.style.display = 'block';
+                return;
+            }
+            let html = '';
+            results.forEach(item => {
+                const name = item.name || '';
+                const addr = item.address || '';
+                const city = item.city || '';
+                const coords = (item.lat && item.lon) ? `${item.lat}, ${item.lon}` : '';
+                html += `<div class="suggest-item" data-name="${name}" data-addr="${addr}" data-city="${city}" data-coords="${coords}">
+                            <div class="name">${name}</div>
+                            <div class="addr">${addr}${city ? ' (' + city + ')' : ''}</div>
+                            ${coords ? `<div class="coords">${coords}</div>` : ''}
+                        </div>`;
+            });
+            suggestList.innerHTML = html;
+            suggestList.style.display = 'block';
+
+            suggestList.querySelectorAll('.suggest-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const name = this.dataset.name;
+                    const addr = this.dataset.addr;
+                    const city = this.dataset.city;
+                    const coords = this.dataset.coords;
+                    isManual = false;
+                    pointNameInput.value = name;
+                    pointAddressInput.value = addr;
+                    pointCityInput.value = city;
+                    pointCoordsInput.value = coords;
+                    pointNameInput.readOnly = true;
+                    pointAddressInput.readOnly = true;
+                    pointCityInput.readOnly = true;
+                    pointCoordsInput.readOnly = true;
+                    pointAddressInput.style.background = '#f5f5f5';
+                    pointCityInput.style.background = '#f5f5f5';
+                    pointCoordsInput.style.background = '#f5f5f5';
+                    suggestList.style.display = 'none';
+                    searchInput.value = name;
+                    pointFields.style.display = 'block';
+                });
+            });
+        }
+
+        // ========== ГЕНЕРАЦИЯ ЧЕК-ЛИСТА ==========
+        function generateChecklist() {
+            const sortedItems = itemsRaw.slice().sort((a, b) => {
+                if (a.format === '60x120' && b.format === '60x60') return -1;
+                if (a.format === '60x60' && b.format === '60x120') return 1;
+                return 0;
+            });
+            let html = '';
+            let currentFormat = null;
+            sortedItems.forEach(item => {
+                if (currentFormat !== item.format) {
+                    currentFormat = item.format;
+                    const formatLabel = (currentFormat === '60x120') ? 'Формат 60x120' : 'Формат 60x60';
+                    html += `<div class="section-title">${formatLabel}</div>`;
+                }
+                html += `
+                    <div class="item">
+                        <div class="item-header">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-format">${item.format}</span>
+                        </div>
+                        <img src="${item.image}" alt="${item.name}" onclick="openImage('${item.image}')" onerror="this.style.display='none'">
+                        <div class="btn-group">
+                            <button class="yes" data-value="yes">✅ Есть</button>
+                            <button class="no" data-value="no">❌ Нет</button>
+                        </div>
+                    </div>
+                `;
+            });
+            checklistDiv.innerHTML = html;
+            document.querySelectorAll('.btn-group').forEach(group => {
+                const btns = group.querySelectorAll('button');
+                btns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        group.querySelectorAll('button').forEach(b => b.classList.remove('selected-yes', 'selected-no'));
+                        this.classList.add(this.dataset.value === 'yes' ? 'selected-yes' : 'selected-no');
+                    });
+                });
+            });
+        }
+        generateChecklist();
+
+        // ========== УПРАВЛЕНИЕ СЧЁТЧИКАМИ СТЕНДОВ ==========
+        document.querySelectorAll('.stand-minus, .stand-plus').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                const input = document.getElementById(targetId);
+                if (!input) return;
+                let val = parseInt(input.value) || 0;
+                if (this.classList.contains('stand-minus')) {
+                    val = Math.max(0, val - 1);
+                } else {
+                    val = val + 1;
+                }
+                input.value = val;
+            });
+        });
+        document.querySelectorAll('.stand-count').forEach(input => {
+            input.addEventListener('change', function() {
+                let val = parseInt(this.value) || 0;
+                if (val < 0) val = 0;
+                this.value = val;
+            });
+        });
+
+        // ========== КНОПКА "НЕТ ВЫСТАВКИ" ==========
+        document.getElementById('selectNoAllBtn').addEventListener('click', function() {
+            document.querySelectorAll('.item').forEach(item => {
+                const noBtn = item.querySelector('.btn-group .no');
+                if (noBtn) noBtn.click();
+            });
+        });
+
+        // ========== ОБНОВЛЕНИЕ БАЗЫ ТОЧЕК ==========
+        refreshPointsBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            this.textContent = '⏳ Загрузка...';
+            const ok = await loadPointsFromNetwork(true);
+            if (ok) {
+                alert('База точек обновлена!');
+            } else {
+                alert('Не удалось обновить базу. Проверьте интернет.');
+            }
+            this.textContent = '🔄 Обновить базу';
+            this.disabled = false;
+        });
+
+        // ========== СБРОС ФОРМЫ ==========
+        function resetForm() {
+            document.querySelectorAll('.btn-group button').forEach(btn => {
+                btn.classList.remove('selected-yes', 'selected-no');
+            });
+            document.getElementById('stand1').value = 0;
+            document.getElementById('stand2').value = 0;
+            commentInput.value = '';
+            managerInput.value = '';
+            managerSuggestList.style.display = 'none';
+            pointFields.style.display = 'none';
+            pointNameInput.value = '';
+            pointAddressInput.value = '';
+            pointCityInput.value = '';
+            pointCoordsInput.value = '';
+            pointNameInput.readOnly = true;
+            pointAddressInput.readOnly = true;
+            pointCityInput.readOnly = true;
+            pointCoordsInput.readOnly = true;
+            pointAddressInput.style.background = '#f5f5f5';
+            pointCityInput.style.background = '#f5f5f5';
+            pointCoordsInput.style.background = '#f5f5f5';
+            searchInput.value = '';
+            suggestList.style.display = 'none';
+            isManual = false;
+
+            // Сброс поиска по артикулам
+            const searchContainer = document.getElementById('itemSearchContainer');
+            const itemSearchInput = document.getElementById('itemSearchInput');
+            const itemSuggestList = document.getElementById('itemSuggestList');
+            if (searchContainer) searchContainer.style.display = 'none';
+            if (itemSearchInput) itemSearchInput.value = '';
+            if (itemSuggestList) itemSuggestList.style.display = 'none';
+
+            searchInput.blur();
+        }
+
+        // ========== ОТПРАВКА / ДОБАВЛЕНИЕ В ОЧЕРЕДЬ ==========
+        submitBtn.addEventListener('click', async function() {
+            const name = pointNameInput.value.trim();
+            const address = pointAddressInput.value.trim();
+            const city = pointCityInput.value.trim();
+            const coords = pointCoordsInput.value.trim();
+            const manager = managerInput.value.trim();
+            const comment = commentInput.value.trim();
+
+            if (!name || !address) {
+                alert('Пожалуйста, укажите название и адрес точки!');
+                return;
+            }
+
+            const itemsStatus = [];
+            document.querySelectorAll('.item').forEach(item => {
+                const selectedBtn = item.querySelector('.btn-group button.selected-yes, .btn-group button.selected-no');
+                const status = selectedBtn ? (selectedBtn.dataset.value === 'yes' ? 'Есть' : 'Нет') : 'Не отмечено';
+                itemsStatus.push(status);
+            });
+
+            const stand1Count = parseInt(document.getElementById('stand1').value) || 0;
+            const stand2Count = parseInt(document.getElementById('stand2').value) || 0;
+
+            const report = {
+                pointName: name,
+                pointAddress: address,
+                pointCity: city,
+                pointCoords: coords,
+                manager: manager,
+                comment: comment,
+                stand1: stand1Count,
+                stand2: stand2Count,
+                items: itemsStatus,
+                type: isManual ? 'Новая' : 'База'
+            };
+
+            await addReportToQueue(report);
+
+            // Показать текст отчёта для копирования
+            let reportText = `Торговая точка: ${name}\nАдрес: ${address}\nГород: ${city || 'не указан'}\nКоординаты: ${coords || 'не указаны'}\nМенеджер: ${manager || 'не указан'}\nКомментарий: ${comment || '—'}\n\n`;
+            reportText += `Стенд «гребенка»: ${stand1Count} шт.\n`;
+            reportText += `Стенд «Выкатной»: ${stand2Count} шт.\n\n`;
+            document.querySelectorAll('.item').forEach((item, index) => {
+                const itemName = item.querySelector('.item-name').textContent;
+                reportText += `${itemName} → ${itemsStatus[index]}\n`;
+            });
+            outputPre.textContent = reportText;
+            resultDiv.style.display = 'block';
+
+            resetForm();
+
+            if (navigator.onLine) {
+                await syncAllReports();
+            } else {
+                const queue = await getQueue();
+                updateStatus('Отчёт сохранён в очереди (нет интернета)', 'warning');
+                alert(`Отчёт добавлен в очередь (${queue.length} шт.). При восстановлении соединения они будут отправлены автоматически.`);
+            }
+        });
+
+        // ========== КОПИРОВАНИЕ ==========
+        copyBtn.addEventListener('click', function() {
+            const text = outputPre.textContent;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Текст скопирован в буфер обмена!');
+                }).catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
+        });
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('Текст скопирован в буфер обмена!');
+        }
+
+        // ========== СИНХРОНИЗАЦИЯ ПО КНОПКЕ ==========
+        syncBtn.addEventListener('click', function() {
+            syncAllReports();
+        });
+
+        // ========== АВТОСИНХРОНИЗАЦИЯ ПРИ ПОЯВЛЕНИИ СЕТИ ==========
+        window.addEventListener('online', function() {
+            updateStatus('Интернет появился, синхронизация...', 'loading');
+            syncAllReports();
+            loadPointsFromNetwork(false);
+        });
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        updateQueueUI().then(() => {
+            if (navigator.onLine) {
+                getQueue().then(queue => {
+                    if (queue.length > 0) {
+                        syncAllReports();
+                    }
+                });
+            }
+        });
+
+        initPoints().then(() => {
+            console.log('База точек готова (IndexedDB)');
+        });
+    })();
+
+    // =====================================================
+    // 8. ПОИСК ПО АРТИКУЛАМ (ЛУПА)
+    // =====================================================
+    (function() {
+        const searchToggle = document.getElementById('searchToggle');
+        const searchContainer = document.getElementById('itemSearchContainer');
+        const searchInput = document.getElementById('itemSearchInput');
+        const suggestList = document.getElementById('itemSuggestList');
+
+        searchToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isVisible = searchContainer.style.display === 'block';
+            searchContainer.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                searchInput.value = '';
+                suggestList.style.display = 'none';
+                searchInput.focus();
+            } else {
+                suggestList.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            if (query.length === 0) {
+                suggestList.style.display = 'none';
+                return;
+            }
+
+            const results = itemsRaw.filter(item => 
+                item.name.toLowerCase().includes(query)
+            ).slice(0, 15);
+
+            if (results.length === 0) {
+                suggestList.innerHTML = '<div style="padding:10px; color:#666;">Артикулов не найдено</div>';
+                suggestList.style.display = 'block';
+                return;
+            }
+
+            let html = '';
+            results.forEach(item => {
+                const name = item.name;
+                const lowerName = name.toLowerCase();
+                const index = lowerName.indexOf(query);
+                let displayName = name;
+                if (index !== -1) {
+                    const before = name.substring(0, index);
+                    const match = name.substring(index, index + query.length);
+                    const after = name.substring(index + query.length);
+                    displayName = before + '<span class="highlight-match">' + match + '</span>' + after;
+                }
+                html += `<div class="suggest-item" data-articul="${name}">
+                            <div class="name">${displayName}</div>
+                            <div style="font-size:12px; color:#888;">${item.format}</div>
+                        </div>`;
+            });
+            suggestList.innerHTML = html;
+            suggestList.style.display = 'block';
+
+            suggestList.querySelectorAll('.suggest-item').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const articul = this.dataset.articul;
+                    const items = document.querySelectorAll('.item');
+                    let target = null;
+                    for (let item of items) {
+                        const nameSpan = item.querySelector('.item-name');
+                        if (nameSpan && nameSpan.textContent.trim() === articul) {
+                            target = item;
+                            break;
+                        }
+                    }
+                    if (target) {
+                        document.querySelectorAll('.highlight-item').forEach(el => el.classList.remove('highlight-item'));
+                        target.classList.add('highlight-item');
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        suggestList.style.display = 'none';
+                        searchContainer.style.display = 'none';
+                        searchInput.value = '';
+                    } else {
+                        alert('Артикул не найден на странице. Возможно, он не отображается в текущем списке.');
+                    }
+                });
+            });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!searchContainer.contains(e.target) && e.target !== searchToggle) {
+                suggestList.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchContainer.style.display = 'none';
+                suggestList.style.display = 'none';
+                searchInput.value = '';
+            }
+        });
+    })();
+
+    // =====================================================
+    // 9. МОДАЛЬНОЕ ОКНО ДЛЯ КАРТИНОК
+    // =====================================================
+    function openImage(src) {
+        document.getElementById('modalImage').src = src;
+        document.getElementById('imageModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeImage() {
+        document.getElementById('imageModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    document.getElementById('modalClose').addEventListener('click', closeImage);
+    document.getElementById('imageModal').addEventListener('click', function(e) {
+        if (e.target === this) closeImage();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeImage();
+    });
+</script>
+</body>
+</html>
