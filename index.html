@@ -3,57 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Чек-лист наличия образцов (офлайн)</title>
+    <title>Чек-лист наличия образцов</title>
     <style>
+        /* (весь ваш CSS остаётся без изменений) */
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        .item img { 
-            width: 80px; 
-            height: auto; 
-            display: block; 
-            margin: 5px 0; 
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.15s ease;
-        }
+        .item img { width: 80px; height: auto; display: block; margin: 5px 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.15s ease; }
         .item img:hover { transform: scale(1.02); }
-        .item-header { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            flex-wrap: wrap;
-        }
-        .item-name { 
-            font-weight: bold; 
-            font-size: 14px; 
-            flex: 1; 
-            min-width: 150px;
-        }
-        .item-format { 
-            font-size: 12px; 
-            background: #e0e0e0; 
-            padding: 2px 8px; 
-            border-radius: 12px; 
-            color: #333;
-            white-space: nowrap;
-        }
+        .item-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .item-name { font-weight: bold; font-size: 14px; flex: 1; min-width: 150px; }
+        .item-format { font-size: 12px; background: #e0e0e0; padding: 2px 8px; border-radius: 12px; color: #333; white-space: nowrap; }
         .btn-group { display: flex; gap: 10px; margin-top: 5px; }
         .btn-group button { flex: 1; padding: 8px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; }
         .yes { background: #4CAF50; color: white; }
         .no { background: #f44336; color: white; }
         .selected-yes { background: #2E7D32; }
         .selected-no { background: #B71C1C; }
-        #point_name, #point_address, #point_city, #point_coords, #manager {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        #point_address, #point_city, #point_coords {
-            background: #f5f5f5;
-            border: 1px solid #ccc;
-        }
+        #point_name, #point_address, #point_city, #point_coords, #manager { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+        #point_address, #point_city, #point_coords { background: #f5f5f5; border: 1px solid #ccc; }
         #point_coords { font-size: 14px; color: #555; }
         .suggest-item, .manager-suggest-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
         .suggest-item:hover, .manager-suggest-item:hover { background: #f0f0f0; }
@@ -63,16 +30,7 @@
         #suggest-list, #manager-suggest-list { background: white; border: 1px solid #ccc; max-height: 250px; overflow-y: auto; margin-top: 5px; display: none; }
         .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .search-row input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; min-width: 150px; }
-        .search-row button { 
-            padding: 10px 20px; 
-            font-size: 16px; 
-            background: #FF9800; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            white-space: nowrap;
-        }
+        .search-row button { padding: 10px 20px; font-size: 16px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; }
         .search-row button:hover { background: #F57C00; }
         #submitBtn { width: 100%; padding: 15px; background: #4CAF50; color: white; font-size: 18px; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; }
         #submitBtn:hover { background: #388E3C; }
@@ -82,216 +40,46 @@
         .copy-btn { margin-top: 10px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .copy-btn:hover { background: #0b7dda; }
         .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px; padding: 5px 10px; background: #f5f5f5; border-left: 4px solid #2196F3; }
-
-        .stands-section {
-            margin: 20px 0 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: #fafafa;
-        }
-        .stands-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: space-around;
-        }
-        .stand-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            flex: 1 1 200px;
-            min-width: 180px;
-        }
-        .stand-item img {
-            width: 70px;
-            height: auto;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: transform 0.15s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .stand-item img:hover {
-            transform: scale(1.02);
-        }
-        .stand-info {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .stand-name {
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .stand-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stand-control button {
-            width: 28px;
-            height: 28px;
-            border: none;
-            border-radius: 4px;
-            background: #e0e0e0;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s;
-        }
-        .stand-control button:hover {
-            background: #ccc;
-        }
-        .stand-count {
-            width: 50px;
-            text-align: center;
-            padding: 4px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background: #fff;
-        }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
+        .stands-section { margin: 20px 0 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+        .stands-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+        .stand-item { display: flex; align-items: center; gap: 15px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex: 1 1 200px; min-width: 180px; }
+        .stand-item img { width: 70px; height: auto; border-radius: 4px; cursor: pointer; transition: transform 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stand-item img:hover { transform: scale(1.02); }
+        .stand-info { display: flex; flex-direction: column; gap: 6px; }
+        .stand-name { font-weight: bold; font-size: 14px; }
+        .stand-control { display: flex; align-items: center; gap: 8px; }
+        .stand-control button { width: 28px; height: 28px; border: none; border-radius: 4px; background: #e0e0e0; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .stand-control button:hover { background: #ccc; }
+        .stand-count { width: 50px; text-align: center; padding: 4px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; cursor: pointer; }
         .modal-overlay.active { display: flex; }
-        .modal-overlay img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            cursor: default;
-        }
-        .modal-close {
-            position: fixed;
-            top: 20px;
-            right: 30px;
-            color: #fff;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 10000;
-            line-height: 1;
-            transition: transform 0.2s;
-        }
+        .modal-overlay img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); cursor: default; }
+        .modal-close { position: fixed; top: 20px; right: 30px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 10000; line-height: 1; transition: transform 0.2s; }
         .modal-close:hover { transform: scale(1.2); }
-
-        #comment {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            resize: vertical;
-        }
-
+        #comment { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-family: Arial, sans-serif; resize: vertical; }
         #point-fields { display: none; }
-
-        /* Статус синхронизации и базы */
-        #sync-status {
-            background: #fff3cd;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border-left: 5px solid #ffc107;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        #sync-status .badge {
-            background: #dc3545;
-            color: white;
-            border-radius: 50px;
-            padding: 2px 10px;
-            font-weight: bold;
-        }
+        #sync-status { background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 5px solid #ffc107; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        #sync-status .badge { background: #dc3545; color: white; border-radius: 50px; padding: 2px 10px; font-weight: bold; }
         #sync-status .badge.online { background: #28a745; }
-        #sync-btn, #refreshPointsBtn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 6px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        #sync-btn, #refreshPointsBtn { background: #007bff; color: white; border: none; padding: 6px 15px; border-radius: 5px; cursor: pointer; }
         #sync-btn:hover, #refreshPointsBtn:hover { background: #0069d9; }
         #sync-btn:disabled { opacity: 0.6; cursor: default; }
-
-        #db-status {
-            font-size: 14px;
-            padding: 5px 10px;
-            background: #e9ecef;
-            border-radius: 4px;
-            color: #495057;
-        }
+        #db-status { font-size: 14px; padding: 5px 10px; background: #e9ecef; border-radius: 4px; color: #495057; }
         #db-status.loaded { background: #d4edda; color: #155724; }
         #db-status.error { background: #f8d7da; color: #721c24; }
         #db-status.cached { background: #cce5ff; color: #004085; }
-
-        /* Стили для поиска артикулов */
-        #itemSearchContainer {
-            margin-bottom: 15px;
-            transition: all 0.2s ease;
-        }
-        #itemSearchContainer input {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #itemSuggestList {
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 0;
-            border-radius: 0 0 5px 5px;
-            display: none;
-        }
-        .suggest-item .highlight-match {
-            font-weight: bold;
-            background: #ffeb3b;
-        }
-        .highlight-item {
-            animation: highlightPulse 1s ease 3;
-        }
-        @keyframes highlightPulse {
-            0% { background: #fff9c4; }
-            50% { background: #ffeb3b; }
-            100% { background: #fff9c4; }
-        }
+        #itemSearchContainer { margin-bottom: 15px; transition: all 0.2s ease; }
+        #itemSearchContainer input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        #itemSuggestList { background: white; border: 1px solid #ccc; border-top: none; max-height: 200px; overflow-y: auto; margin-top: 0; border-radius: 0 0 5px 5px; display: none; }
+        .suggest-item .highlight-match { font-weight: bold; background: #ffeb3b; }
+        .highlight-item { animation: highlightPulse 1s ease 3; }
+        @keyframes highlightPulse { 0% { background: #fff9c4; } 50% { background: #ffeb3b; } 100% { background: #fff9c4; } }
     </style>
 </head>
 <body>
 
 <h2>Отчёт по торговой точке</h2>
 
-<!-- Статус синхронизации и базы -->
 <div id="sync-status">
     <span id="sync-message">📡 Статус: <span id="status-text">Ожидание</span></span>
     <span>📦 Очередь: <span id="queue-count" class="badge">0</span></span>
@@ -309,17 +97,13 @@
 </div>
 <div id="suggest-list" class="suggest-list"></div>
 
-<!-- Поля точки -->
 <div id="point-fields">
     <label for="point_name">Название точки:</label>
     <input id="point_name" type="text" placeholder="Введите название..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5;" readonly>
-
     <label for="point_address">Адрес:</label>
     <input id="point_address" type="text" placeholder="Введите адрес..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
-
     <label for="point_city">Город:</label>
     <input id="point_city" type="text" placeholder="Введите город..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
-
     <label for="point_coords">Координаты (широта, долгота):</label>
     <input id="point_coords" type="text" placeholder="Например: 53.195, 50.100" style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
 </div>
@@ -329,8 +113,6 @@
 <div id="manager-suggest-list" class="suggest-list"></div>
 
 <hr>
-
-<!-- Заголовок "Наличие образцов" с лупой -->
 <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
     <h3 style="margin: 0;">Наличие образцов</h3>
     <span id="searchToggle" style="cursor: pointer; font-size: 24px; user-select: none;" title="Поиск по артикулам">🔍</span>
@@ -340,7 +122,6 @@
     <div id="itemSuggestList" class="suggest-list"></div>
 </div>
 
-<!-- Стенды -->
 <div class="stands-section">
     <div class="section-title">Стенды</div>
     <div class="stands-container">
@@ -369,7 +150,6 @@
     </div>
 </div>
 
-<!-- Кнопка "Нет выставки" -->
 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
     <button id="selectNoAllBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #f44336; color: white;">❌ Нет выставки</button>
 </div>
@@ -387,7 +167,6 @@
     <button id="copyBtn" class="copy-btn">📋 Скопировать текст</button>
 </div>
 
-<!-- Модальное окно -->
 <div class="modal-overlay" id="imageModal">
     <span class="modal-close" id="modalClose">&times;</span>
     <img id="modalImage" src="" alt="Увеличенное изображение">
@@ -395,92 +174,16 @@
 
 <script>
     // =====================================================
-    // 0. ОБЁРТКА ДЛЯ INDEXEDDB (аналог localStorage)
-    // =====================================================
-    const idbStorage = {
-        _db: null,
-        _storeName: 'keyvalue',
-        _ready: null,
-
-        _init() {
-            if (this._ready) return this._ready;
-            this._ready = new Promise((resolve, reject) => {
-                const request = indexedDB.open('IdbStorageDB', 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(this._storeName)) {
-                        db.createObjectStore(this._storeName, { keyPath: 'key' });
-                    }
-                };
-                request.onsuccess = (event) => {
-                    this._db = event.target.result;
-                    resolve();
-                };
-                request.onerror = (event) => {
-                    console.error('Ошибка открытия IndexedDB:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-            return this._ready;
-        },
-
-        async setItem(key, value) {
-            await this._init();
-            return new Promise((resolve, reject) => {
-                const tx = this._db.transaction([this._storeName], 'readwrite');
-                const store = tx.objectStore(this._storeName);
-                const req = store.put({ key, value: JSON.stringify(value) });
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
-        },
-
-        async getItem(key) {
-            await this._init();
-            return new Promise((resolve, reject) => {
-                const tx = this._db.transaction([this._storeName], 'readonly');
-                const store = tx.objectStore(this._storeName);
-                const req = store.get(key);
-                req.onsuccess = () => {
-                    const result = req.result;
-                    resolve(result ? JSON.parse(result.value) : null);
-                };
-                req.onerror = () => reject(req.error);
-            });
-        },
-
-        async removeItem(key) {
-            await this._init();
-            return new Promise((resolve, reject) => {
-                const tx = this._db.transaction([this._storeName], 'readwrite');
-                const store = tx.objectStore(this._storeName);
-                const req = store.delete(key);
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
-        },
-
-        async clear() {
-            await this._init();
-            return new Promise((resolve, reject) => {
-                const tx = this._db.transaction([this._storeName], 'readwrite');
-                const store = tx.objectStore(this._storeName);
-                const req = store.clear();
-                req.onsuccess = () => resolve();
-                req.onerror = () => reject(req.error);
-            });
-        }
-    };
-
-    // =====================================================
-    // 1. НАСТРОЙКИ И ПОЛНЫЙ СПИСОК ТОВАРОВ
+    // 1. НАСТРОЙКИ
     // =====================================================
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxblBdosmIJ8zDs7Dn-cBN3wqjsYcXeaNuyPK2i3tIbtiZ7UH5xyY5P0q0lV2IEgI7f/exec';
     const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
     const STORAGE_KEY_POINTS = 'offline_points_cache';
     const STORAGE_KEY_QUEUE = 'offline_reports_queue';
 
-    // ================== ВСЕ АРТИКУЛЫ ==================
+    // =====================================================
+    // 2. ВСЕ АРТИКУЛЫ (полный список)
+    // =====================================================
     const itemsRaw = [
         { name: 'MNLIT-11M\\B12503', image: 'https://static.tildacdn.com/stor6462-3231-4535-b366-306565393434/cdc4d5dd0fdd09d0cabe0e2fc17fca32.png', format: '60x120' },
         { name: 'SKALA-21M\\B12909', image: 'https://static.tildacdn.com/stor3030-6366-4139-b666-383631613033/ed3dca6d7ac447665acdbb82f92c88a7.jpg', format: '60x120' },
@@ -541,75 +244,68 @@
         { name: 'PSPCT-12R\\B60925', image: 'https://static.tildacdn.com/stor3833-3963-4863-a461-643336373461/0b922c66ada10e2496ab7f134c644714.jpg', format: '60x60' }
     ];
 
-    // Расширенный резервный список точек
-    const FALLBACK_DATA = [
-        { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956 },
-        { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002 },
-        { name: 'OBI Самара', address: 'Самара, ул. Ново-Садовая, 106', city: 'Самара', lat: 53.2170, lon: 50.1420 }
-    ];
+    // =====================================================
+    // 3. РАБОТА С ХРАНИЛИЩЕМ (localStorage)
+    // =====================================================
+    function loadPointsFromStorage() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY_POINTS);
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed) && parsed.length) return parsed;
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    function savePointsToStorage(data) {
+        try {
+            localStorage.setItem(STORAGE_KEY_POINTS, JSON.stringify(data));
+        } catch(e) {}
+    }
+
+    function loadQueueFromStorage() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY_QUEUE);
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed)) return parsed;
+            }
+        } catch(e) {}
+        return [];
+    }
+
+    function saveQueueToStorage(queue) {
+        try {
+            localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(queue));
+        } catch(e) {}
+    }
 
     // =====================================================
-    // 2. РАБОТА С КЕШЕМ ТОЧЕК
+    // 4. ЗАГРУЗКА ТОЧЕК (сеть + кеш)
     // =====================================================
     let pointsData = [];
     let dataLoaded = false;
     let isManual = false;
 
-    async function loadPointsFromCache() {
-        try {
-            const cached = await idbStorage.getItem(STORAGE_KEY_POINTS);
-            if (cached) {
-                pointsData = cached;
-                dataLoaded = true;
-                console.log(`📦 Загружено ${pointsData.length} точек из кеша (IndexedDB)`);
-                updateDbStatus('cached', `Кеш (${pointsData.length} точек)`);
-                return true;
-            }
-            return false;
-        } catch (e) {
-            console.warn('Ошибка чтения кеша из IndexedDB:', e);
-            return false;
-        }
-    }
-
-    async function savePointsToCache(data) {
-        try {
-            await idbStorage.setItem(STORAGE_KEY_POINTS, data);
-            console.log('💾 Кеш точек сохранён в IndexedDB');
-        } catch (e) {
-            console.warn('Не удалось сохранить кеш в IndexedDB:', e);
-        }
-    }
-
-    function updateDbStatus(type, message) {
-        const el = document.getElementById('db-status');
-        el.textContent = '🗄️ ' + message;
-        el.className = type;
-    }
-
-    // Парсинг CSV
     function parseCSV(csvText) {
         csvText = csvText.replace(/^\uFEFF/, '');
         const lines = csvText.split('\n').filter(line => line.trim() !== '');
         if (lines.length < 2) return [];
-
         const headerLine = lines[0];
         let delimiter = ';';
         if (headerLine.includes('\t')) delimiter = '\t';
         else if (headerLine.includes(';')) delimiter = ';';
         else if (headerLine.includes(',')) delimiter = ',';
-
         const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase());
         let nameIdx = headers.findIndex(h => h.includes('название') || h.includes('name'));
         let addrIdx = headers.findIndex(h => h.includes('адрес') || h.includes('address'));
         let cityIdx = headers.findIndex(h => h.includes('город') || h.includes('city'));
         let coordIdx = headers.findIndex(h => h.includes('координат') || h.includes('coord') || h.includes('lat'));
-
         if (nameIdx === -1) nameIdx = 0;
         if (addrIdx === -1) addrIdx = 1;
         if (cityIdx === -1) cityIdx = 2;
         if (coordIdx === -1) coordIdx = 3;
-
         const result = [];
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(delimiter).map(c => c.trim());
@@ -618,7 +314,6 @@
             const address = cols[addrIdx] || '';
             const city = cols[cityIdx] || '';
             const coordStr = cols[coordIdx] || '';
-
             let lat = NaN, lon = NaN;
             if (coordStr) {
                 let parts = coordStr.split(',').map(s => s.trim());
@@ -633,7 +328,6 @@
                     }
                 }
             }
-
             if (name && address && !isNaN(lat) && !isNaN(lon)) {
                 result.push({ name, address, city, lat, lon });
             }
@@ -641,57 +335,85 @@
         return result;
     }
 
-    // Загрузка из сети
-    async function loadPointsFromNetwork(showMessage = false) {
+    async function loadPointsFromNetwork() {
         try {
-            console.log('⏳ Загрузка CSV с сервера...');
-            if (showMessage) updateDbStatus('', 'Загрузка...');
             const response = await fetch(CSV_URL);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) throw new Error('Network error');
             const csvText = await response.text();
             const parsed = parseCSV(csvText);
             if (parsed.length > 0) {
                 pointsData = parsed;
                 dataLoaded = true;
-                await savePointsToCache(pointsData);
-                console.log(`✅ Загружено ${pointsData.length} записей (сеть)`);
+                savePointsToStorage(pointsData);
                 updateDbStatus('loaded', `Загружено ${pointsData.length} точек`);
                 return true;
             }
-            throw new Error('Пустой CSV');
-        } catch (error) {
-            console.warn('⚠️ Не удалось загрузить CSV с сети:', error);
-            if (showMessage) {
-                updateDbStatus('error', 'Ошибка загрузки, используется резерв');
-            }
+            return false;
+        } catch (e) {
+            console.warn('Network load failed', e);
             return false;
         }
     }
 
-    // Инициализация точек
-    async function initPoints() {
-        const hasCache = await loadPointsFromCache();
-        if (!hasCache) {
-            const ok = await loadPointsFromNetwork(true);
-            if (!ok) {
-                pointsData = FALLBACK_DATA;
-                dataLoaded = true;
-                await savePointsToCache(pointsData);
-                console.log('🔧 Используем расширенный резервный список');
-                updateDbStatus('error', `Резерв (${pointsData.length} точек)`);
+    async function loadPointsFromCache() {
+        try {
+            const cache = await caches.open('data-cache');
+            const cachedResponse = await cache.match(CSV_URL);
+            if (cachedResponse) {
+                const csvText = await cachedResponse.text();
+                const parsed = parseCSV(csvText);
+                if (parsed.length > 0) {
+                    pointsData = parsed;
+                    dataLoaded = true;
+                    savePointsToStorage(pointsData);
+                    updateDbStatus('cached', `Кеш (${pointsData.length} точек)`);
+                    return true;
+                }
             }
-        } else {
-            if (navigator.onLine) {
-                try {
-                    await loadPointsFromNetwork(false);
-                } catch (e) { /* молча */ }
-            }
-        }
+        } catch(e) {}
+        return false;
     }
 
-    // =====================================================
-    // 3. ПОИСК ТОЧЕК (ВСТРОЕННЫЙ)
-    // =====================================================
+    async function initPoints() {
+        // 1. Пытаемся взять из localStorage
+        let stored = loadPointsFromStorage();
+        if (stored && stored.length) {
+            pointsData = stored;
+            dataLoaded = true;
+            updateDbStatus('cached', `Кеш (${pointsData.length} точек)`);
+            // Фоново пробуем обновить из сети
+            if (navigator.onLine) {
+                loadPointsFromNetwork().then(ok => {
+                    if (ok) updateDbStatus('loaded', `Загружено ${pointsData.length} точек`);
+                });
+            }
+            return;
+        }
+
+        // 2. Пытаемся взять из кеша (Service Worker)
+        const fromCache = await loadPointsFromCache();
+        if (fromCache) return;
+
+        // 3. Загружаем из сети
+        const fromNetwork = await loadPointsFromNetwork();
+        if (fromNetwork) return;
+
+        // 4. Резерв (минимальный список)
+        pointsData = [
+            { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002 },
+            { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956 }
+        ];
+        dataLoaded = true;
+        savePointsToStorage(pointsData);
+        updateDbStatus('error', `Резерв (${pointsData.length} точек)`);
+    }
+
+    function updateDbStatus(type, message) {
+        const el = document.getElementById('db-status');
+        el.textContent = '🗄️ ' + message;
+        el.className = type;
+    }
+
     function searchPoints(query) {
         if (!query.trim()) return [];
         const q = query.toLowerCase().trim();
@@ -705,39 +427,14 @@
             }
             if (results.length >= 50) break;
         }
-        results.sort((a, b) => {
-            const aName = (a.name || '').toLowerCase();
-            const bName = (b.name || '').toLowerCase();
-            const idxA = aName.indexOf(q);
-            const idxB = bName.indexOf(q);
-            if (idxA === -1 && idxB === -1) return 0;
-            if (idxA === -1) return 1;
-            if (idxB === -1) return -1;
-            return idxA - idxB;
-        });
         return results;
     }
 
     // =====================================================
-    // 4. ОЧЕРЕДЬ ОТЧЁТОВ
+    // 5. ОЧЕРЕДЬ ОТЧЁТОВ
     // =====================================================
-    async function getQueue() {
-        try {
-            const data = await idbStorage.getItem(STORAGE_KEY_QUEUE);
-            return Array.isArray(data) ? data : [];
-        } catch (e) {
-            console.warn('Ошибка чтения очереди из IndexedDB:', e);
-            return [];
-        }
-    }
-
-    async function saveQueue(queue) {
-        try {
-            await idbStorage.setItem(STORAGE_KEY_QUEUE, queue);
-        } catch (e) {
-            console.warn('Не удалось сохранить очередь в IndexedDB:', e);
-        }
-    }
+    async function getQueue() { return loadQueueFromStorage(); }
+    async function saveQueue(queue) { saveQueueToStorage(queue); }
 
     async function addReportToQueue(reportData) {
         const queue = await getQueue();
@@ -751,9 +448,6 @@
         return queue.length;
     }
 
-    // =====================================================
-    // 5. ОТПРАВКА НА СЕРВЕР
-    // =====================================================
     async function sendReportToServer(report) {
         try {
             await fetch(SCRIPT_URL, {
@@ -772,67 +466,51 @@
     async function syncAllReports() {
         const queue = await getQueue();
         if (queue.length === 0) {
-            updateStatus('Нет отчётов для синхронизации', 'info');
+            updateStatus('Нет отчётов для синхронизации');
             return;
         }
         if (!navigator.onLine) {
-            updateStatus('Нет интернета – отложено', 'warning');
+            updateStatus('Нет интернета – отложено');
             return;
         }
-
-        updateStatus(`Синхронизация (${queue.length} шт.)...`, 'loading');
+        updateStatus(`Синхронизация (${queue.length} шт.)...`);
         document.getElementById('sync-btn').disabled = true;
-
         let successCount = 0;
         const failedIds = [];
-
         for (const report of queue) {
             const ok = await sendReportToServer(report);
-            if (ok) {
-                successCount++;
-            } else {
-                failedIds.push(report.id);
-            }
+            if (ok) successCount++;
+            else failedIds.push(report.id);
         }
-
         if (successCount > 0) {
             let newQueue = await getQueue();
             newQueue = newQueue.filter(r => failedIds.includes(r.id));
             await saveQueue(newQueue);
         }
-
         await updateQueueUI();
         document.getElementById('sync-btn').disabled = false;
-
         if (failedIds.length === 0) {
-            updateStatus(`✅ Все ${successCount} отчётов отправлены!`, 'success');
+            updateStatus(`✅ Все ${successCount} отчётов отправлены!`);
         } else {
-            updateStatus(`⚠️ Отправлено ${successCount}, ${failedIds.length} не удалось (будут повторно)`, 'warning');
+            updateStatus(`⚠️ Отправлено ${successCount}, ${failedIds.length} не удалось`);
         }
     }
 
-    // =====================================================
-    // 6. ОБНОВЛЕНИЕ UI СТАТУСА
-    // =====================================================
     async function updateQueueUI() {
         const queue = await getQueue();
         const count = queue.length;
         document.getElementById('queue-count').textContent = count;
         const badge = document.getElementById('queue-count');
         badge.className = 'badge' + (count === 0 ? ' online' : '');
-        if (count === 0) {
-            document.getElementById('status-text').textContent = 'Всё синхронизировано';
-        } else {
-            document.getElementById('status-text').textContent = `Ожидает отправки (${count})`;
-        }
+        document.getElementById('status-text').textContent = count === 0 ? 'Всё синхронизировано' : `Ожидает отправки (${count})`;
     }
 
-    function updateStatus(msg, type = 'info') {
+    function updateStatus(msg) {
         document.getElementById('status-text').textContent = msg;
     }
 
     // =====================================================
-    // 7. ЛОГИКА ФОРМЫ И ЧЕК-ЛИСТА
+    // 6. ЛОГИКА ФОРМЫ
     // =====================================================
     (function() {
         const searchInput = document.getElementById('search_input');
@@ -864,7 +542,6 @@
             'Пушин Дмитрий'
         ];
 
-        // ========== ПОДСКАЗКИ МЕНЕДЖЕРОВ ==========
         function filterManagers(query) {
             if (!query.trim()) return managers.slice(0, 10);
             const lower = query.toLowerCase();
@@ -911,7 +588,6 @@
             setTimeout(() => { managerSuggestList.style.display = 'none'; }, 200);
         });
 
-        // ========== НОВАЯ ТОЧКА ==========
         newPointBtn.addEventListener('click', function() {
             isManual = true;
             pointNameInput.value = '';
@@ -931,7 +607,6 @@
             pointFields.style.display = 'block';
         });
 
-        // ========== ПОИСК ТОЧЕК ==========
         let searchTimer;
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimer);
@@ -997,7 +672,6 @@
             });
         }
 
-        // ========== ГЕНЕРАЦИЯ ЧЕК-ЛИСТА ==========
         function generateChecklist() {
             const sortedItems = itemsRaw.slice().sort((a, b) => {
                 if (a.format === '60x120' && b.format === '60x60') return -1;
@@ -1039,7 +713,6 @@
         }
         generateChecklist();
 
-        // ========== УПРАВЛЕНИЕ СЧЁТЧИКАМИ СТЕНДОВ ==========
         document.querySelectorAll('.stand-minus, .stand-plus').forEach(btn => {
             btn.addEventListener('click', function() {
                 const targetId = this.dataset.target;
@@ -1062,7 +735,6 @@
             });
         });
 
-        // ========== КНОПКА "НЕТ ВЫСТАВКИ" ==========
         document.getElementById('selectNoAllBtn').addEventListener('click', function() {
             document.querySelectorAll('.item').forEach(item => {
                 const noBtn = item.querySelector('.btn-group .no');
@@ -1070,21 +742,16 @@
             });
         });
 
-        // ========== ОБНОВЛЕНИЕ БАЗЫ ТОЧЕК ==========
         refreshPointsBtn.addEventListener('click', async function() {
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
-            const ok = await loadPointsFromNetwork(true);
-            if (ok) {
-                alert('База точек обновлена!');
-            } else {
-                alert('Не удалось обновить базу. Проверьте интернет.');
-            }
+            const ok = await loadPointsFromNetwork();
+            if (ok) alert('База точек обновлена!');
+            else alert('Не удалось обновить базу. Проверьте интернет.');
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
         });
 
-        // ========== СБРОС ФОРМЫ ==========
         function resetForm() {
             document.querySelectorAll('.btn-group button').forEach(btn => {
                 btn.classList.remove('selected-yes', 'selected-no');
@@ -1109,7 +776,6 @@
             searchInput.value = '';
             suggestList.style.display = 'none';
             isManual = false;
-
             // Сброс поиска по артикулам
             const searchContainer = document.getElementById('itemSearchContainer');
             const itemSearchInput = document.getElementById('itemSearchInput');
@@ -1117,11 +783,9 @@
             if (searchContainer) searchContainer.style.display = 'none';
             if (itemSearchInput) itemSearchInput.value = '';
             if (itemSuggestList) itemSuggestList.style.display = 'none';
-
             searchInput.blur();
         }
 
-        // ========== ОТПРАВКА / ДОБАВЛЕНИЕ В ОЧЕРЕДЬ ==========
         submitBtn.addEventListener('click', async function() {
             const name = pointNameInput.value.trim();
             const address = pointAddressInput.value.trim();
@@ -1160,7 +824,6 @@
 
             await addReportToQueue(report);
 
-            // Показать текст отчёта для копирования
             let reportText = `Торговая точка: ${name}\nАдрес: ${address}\nГород: ${city || 'не указан'}\nКоординаты: ${coords || 'не указаны'}\nМенеджер: ${manager || 'не указан'}\nКомментарий: ${comment || '—'}\n\n`;
             reportText += `Стенд «гребенка»: ${stand1Count} шт.\n`;
             reportText += `Стенд «Выкатной»: ${stand2Count} шт.\n\n`;
@@ -1177,12 +840,11 @@
                 await syncAllReports();
             } else {
                 const queue = await getQueue();
-                updateStatus('Отчёт сохранён в очереди (нет интернета)', 'warning');
+                updateStatus('Отчёт сохранён в очереди (нет интернета)');
                 alert(`Отчёт добавлен в очередь (${queue.length} шт.). При восстановлении соединения они будут отправлены автоматически.`);
             }
         });
 
-        // ========== КОПИРОВАНИЕ ==========
         copyBtn.addEventListener('click', function() {
             const text = outputPre.textContent;
             if (navigator.clipboard) {
@@ -1203,36 +865,33 @@
             alert('Текст скопирован в буфер обмена!');
         }
 
-        // ========== СИНХРОНИЗАЦИЯ ПО КНОПКЕ ==========
         syncBtn.addEventListener('click', function() {
             syncAllReports();
         });
 
-        // ========== АВТОСИНХРОНИЗАЦИЯ ПРИ ПОЯВЛЕНИИ СЕТИ ==========
         window.addEventListener('online', function() {
-            updateStatus('Интернет появился, синхронизация...', 'loading');
+            updateStatus('Интернет появился, синхронизация...');
             syncAllReports();
-            loadPointsFromNetwork(false);
+            loadPointsFromNetwork().then(ok => {
+                if (ok) updateDbStatus('loaded', `Загружено ${pointsData.length} точек`);
+            });
         });
 
-        // ========== ИНИЦИАЛИЗАЦИЯ ==========
         updateQueueUI().then(() => {
             if (navigator.onLine) {
                 getQueue().then(queue => {
-                    if (queue.length > 0) {
-                        syncAllReports();
-                    }
+                    if (queue.length > 0) syncAllReports();
                 });
             }
         });
 
         initPoints().then(() => {
-            console.log('База точек готова (IndexedDB)');
+            console.log('База точек готова');
         });
     })();
 
     // =====================================================
-    // 8. ПОИСК ПО АРТИКУЛАМ (ЛУПА)
+    // 7. ПОИСК ПО АРТИКУЛАМ
     // =====================================================
     (function() {
         const searchToggle = document.getElementById('searchToggle');
@@ -1259,17 +918,14 @@
                 suggestList.style.display = 'none';
                 return;
             }
-
             const results = itemsRaw.filter(item => 
                 item.name.toLowerCase().includes(query)
             ).slice(0, 15);
-
             if (results.length === 0) {
                 suggestList.innerHTML = '<div style="padding:10px; color:#666;">Артикулов не найдено</div>';
                 suggestList.style.display = 'block';
                 return;
             }
-
             let html = '';
             results.forEach(item => {
                 const name = item.name;
@@ -1311,7 +967,7 @@
                         searchContainer.style.display = 'none';
                         searchInput.value = '';
                     } else {
-                        alert('Артикул не найден на странице. Возможно, он не отображается в текущем списке.');
+                        alert('Артикул не найден на странице.');
                     }
                 });
             });
@@ -1333,7 +989,7 @@
     })();
 
     // =====================================================
-    // 9. МОДАЛЬНОЕ ОКНО ДЛЯ КАРТИНОК
+    // 8. МОДАЛЬНОЕ ОКНО
     // =====================================================
     function openImage(src) {
         document.getElementById('modalImage').src = src;
@@ -1351,6 +1007,15 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeImage();
     });
+
+    // =====================================================
+    // 9. РЕГИСТРАЦИЯ SERVICE WORKER
+    // =====================================================
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered'))
+            .catch(err => console.log('SW registration failed', err));
+    }
 </script>
 </body>
 </html>
