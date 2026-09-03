@@ -74,6 +74,45 @@
         .suggest-item .highlight-match { font-weight: bold; background: #ffeb3b; }
         .highlight-item { animation: highlightPulse 1s ease 3; }
         @keyframes highlightPulse { 0% { background: #fff9c4; } 50% { background: #ffeb3b; } 100% { background: #fff9c4; } }
+        .input-error {
+            border: 2px solid red !important;
+        }
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+            width: 100%;
+            max-width: 500px;
+        }
+        .toast {
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 16px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: auto;
+            width: 100%;
+            text-align: center;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.success { background: #28a745; }
+        .toast.info { background: #17a2b8; }
+        .toast.warning { background: #ffc107; color: #333; }
+        .toast.error { background: #dc3545; }
     </style>
 </head>
 <body>
@@ -171,6 +210,8 @@
     <span class="modal-close" id="modalClose">&times;</span>
     <img id="modalImage" src="" alt="Увеличенное изображение">
 </div>
+
+<div id="toast-container"></div>
 
 <script>
     // =====================================================
@@ -375,13 +416,11 @@
     }
 
     async function initPoints() {
-        // 1. Пытаемся взять из localStorage
         let stored = loadPointsFromStorage();
         if (stored && stored.length) {
             pointsData = stored;
             dataLoaded = true;
             updateDbStatus('cached', `Кеш (${pointsData.length} точек)`);
-            // Фоново пробуем обновить из сети
             if (navigator.onLine) {
                 loadPointsFromNetwork().then(ok => {
                     if (ok) updateDbStatus('loaded', `Загружено ${pointsData.length} точек`);
@@ -389,16 +428,10 @@
             }
             return;
         }
-
-        // 2. Пытаемся взять из кеша (Service Worker)
         const fromCache = await loadPointsFromCache();
         if (fromCache) return;
-
-        // 3. Загружаем из сети
         const fromNetwork = await loadPointsFromNetwork();
         if (fromNetwork) return;
-
-        // 4. Резерв (минимальный список)
         pointsData = [
             { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002 },
             { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956 }
@@ -510,7 +543,27 @@
     }
 
     // =====================================================
-    // 6. ЛОГИКА ФОРМЫ
+    // 6. TOAST-УВЕДОМЛЕНИЯ
+    // =====================================================
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 300);
+        }, 3500);
+    }
+
+    // =====================================================
+    // 7. ЛОГИКА ФОРМЫ
     // =====================================================
     (function() {
         const searchInput = document.getElementById('search_input');
@@ -563,6 +616,7 @@
                 el.addEventListener('click', function() {
                     managerInput.value = this.dataset.name;
                     managerSuggestList.style.display = 'none';
+                    managerInput.classList.remove('input-error');
                 });
             });
         }
@@ -575,6 +629,7 @@
             }
             const filtered = filterManagers(query);
             renderManagerSuggestions(filtered);
+            this.classList.remove('input-error');
         });
         managerInput.addEventListener('focus', function() {
             if (this.value.trim() === '') {
@@ -586,6 +641,14 @@
         });
         managerInput.addEventListener('blur', function() {
             setTimeout(() => { managerSuggestList.style.display = 'none'; }, 200);
+        });
+
+        // Снятие подсветки при вводе
+        pointNameInput.addEventListener('input', function() {
+            this.classList.remove('input-error');
+        });
+        pointAddressInput.addEventListener('input', function() {
+            this.classList.remove('input-error');
         });
 
         newPointBtn.addEventListener('click', function() {
@@ -605,6 +668,9 @@
             suggestList.style.display = 'none';
             searchInput.value = '';
             pointFields.style.display = 'block';
+            pointNameInput.classList.remove('input-error');
+            pointAddressInput.classList.remove('input-error');
+            managerInput.classList.remove('input-error');
         });
 
         let searchTimer;
@@ -668,6 +734,9 @@
                     suggestList.style.display = 'none';
                     searchInput.value = name;
                     pointFields.style.display = 'block';
+                    pointNameInput.classList.remove('input-error');
+                    pointAddressInput.classList.remove('input-error');
+                    managerInput.classList.remove('input-error');
                 });
             });
         }
@@ -746,8 +815,11 @@
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
             const ok = await loadPointsFromNetwork();
-            if (ok) alert('База точек обновлена!');
-            else alert('Не удалось обновить базу. Проверьте интернет.');
+            if (ok) {
+                showToast('База точек обновлена!', 'success');
+            } else {
+                showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
+            }
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
         });
@@ -761,6 +833,9 @@
             commentInput.value = '';
             managerInput.value = '';
             managerSuggestList.style.display = 'none';
+            managerInput.classList.remove('input-error');
+            pointNameInput.classList.remove('input-error');
+            pointAddressInput.classList.remove('input-error');
             pointFields.style.display = 'none';
             pointNameInput.value = '';
             pointAddressInput.value = '';
@@ -776,7 +851,6 @@
             searchInput.value = '';
             suggestList.style.display = 'none';
             isManual = false;
-            // Сброс поиска по артикулам
             const searchContainer = document.getElementById('itemSearchContainer');
             const itemSearchInput = document.getElementById('itemSearchInput');
             const itemSuggestList = document.getElementById('itemSuggestList');
@@ -794,15 +868,36 @@
             const manager = managerInput.value.trim();
             const comment = commentInput.value.trim();
 
-            if (!name || !address) {
-                alert('Пожалуйста, укажите название и адрес точки!');
+            // Проверка названия точки
+            if (!name) {
+                pointNameInput.classList.add('input-error');
+                showToast('Заполните название точки', 'error');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            // Проверка адреса
+            if (!address) {
+                pointAddressInput.classList.add('input-error');
+                showToast('Заполните адрес точки', 'error');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            // Проверка менеджера
+            if (!manager) {
+                managerInput.classList.add('input-error');
+                showToast('Заполните менеджера', 'error');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
 
+            // Сбор статусов – неотмеченные считаем как "Нет"
             const itemsStatus = [];
             document.querySelectorAll('.item').forEach(item => {
                 const selectedBtn = item.querySelector('.btn-group button.selected-yes, .btn-group button.selected-no');
-                const status = selectedBtn ? (selectedBtn.dataset.value === 'yes' ? 'Есть' : 'Нет') : 'Не отмечено';
+                let status = 'Нет';
+                if (selectedBtn) {
+                    status = selectedBtn.dataset.value === 'yes' ? 'Есть' : 'Нет';
+                }
                 itemsStatus.push(status);
             });
 
@@ -834,14 +929,16 @@
             outputPre.textContent = reportText;
             resultDiv.style.display = 'block';
 
+            showToast('Отчёт принят', 'success');
+
             resetForm();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
             if (navigator.onLine) {
                 await syncAllReports();
             } else {
-                const queue = await getQueue();
                 updateStatus('Отчёт сохранён в очереди (нет интернета)');
-                alert(`Отчёт добавлен в очередь (${queue.length} шт.). При восстановлении соединения они будут отправлены автоматически.`);
             }
         });
 
@@ -849,7 +946,7 @@
             const text = outputPre.textContent;
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(text).then(() => {
-                    alert('Текст скопирован в буфер обмена!');
+                    showToast('Текст скопирован в буфер обмена!', 'success');
                 }).catch(() => fallbackCopy(text));
             } else {
                 fallbackCopy(text);
@@ -862,7 +959,7 @@
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            alert('Текст скопирован в буфер обмена!');
+            showToast('Текст скопирован в буфер обмена!', 'success');
         }
 
         syncBtn.addEventListener('click', function() {
@@ -891,7 +988,7 @@
     })();
 
     // =====================================================
-    // 7. ПОИСК ПО АРТИКУЛАМ
+    // 8. ПОИСК ПО АРТИКУЛАМ
     // =====================================================
     (function() {
         const searchToggle = document.getElementById('searchToggle');
@@ -989,7 +1086,7 @@
     })();
 
     // =====================================================
-    // 8. МОДАЛЬНОЕ ОКНО
+    // 9. МОДАЛЬНОЕ ОКНО
     // =====================================================
     function openImage(src) {
         document.getElementById('modalImage').src = src;
@@ -1009,7 +1106,7 @@
     });
 
     // =====================================================
-    // 9. РЕГИСТРАЦИЯ SERVICE WORKER
+    // 10. РЕГИСТРАЦИЯ SERVICE WORKER
     // =====================================================
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
