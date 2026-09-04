@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
     <style>
-        /* (весь ваш CSS остаётся без изменений) */
+        /* (весь ваш CSS остаётся без изменений, кроме добавленных стилей для фиксированной кнопки и попапа) */
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
         .item img { width: 80px; height: auto; display: block; margin: 5px 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.15s ease; }
@@ -68,9 +68,39 @@
         #db-status.loaded { background: #d4edda; color: #155724; }
         #db-status.error { background: #f8d7da; color: #721c24; }
         #db-status.cached { background: #cce5ff; color: #004085; }
-        #itemSearchContainer { margin-bottom: 15px; transition: all 0.2s ease; }
-        #itemSearchContainer input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
-        #itemSuggestList { background: white; border: 1px solid #ccc; border-top: none; max-height: 200px; overflow-y: auto; margin-top: 0; border-radius: 0 0 5px 5px; display: none; }
+        #itemSearchContainer { 
+            display: none; 
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            width: 90%;
+            max-width: 400px;
+            margin: 0;
+        }
+        #itemSearchContainer input { 
+            width: 100%; 
+            padding: 10px; 
+            font-size: 16px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+        }
+        #itemSuggestList { 
+            background: white; 
+            border: 1px solid #ccc; 
+            border-top: none; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            margin-top: 0; 
+            border-radius: 0 0 5px 5px; 
+            display: none; 
+        }
         .suggest-item .highlight-match { font-weight: bold; background: #ffeb3b; }
         .highlight-item { animation: highlightPulse 1s ease 3; }
         @keyframes highlightPulse { 0% { background: #fff9c4; } 50% { background: #ffeb3b; } 100% { background: #fff9c4; } }
@@ -113,6 +143,47 @@
         .toast.info { background: #17a2b8; }
         .toast.warning { background: #ffc107; color: #333; }
         .toast.error { background: #dc3545; }
+
+        /* --- ДОБАВЛЕННЫЕ СТИЛИ ДЛЯ ФИКСИРОВАННОЙ КНОПКИ И ОВЕРЛЕЯ --- */
+        #searchToggle {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #FFEAA7;
+            color: #fff;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: transform 0.2s, background 0.2s;
+            user-select: none;
+            line-height: 1;
+        }
+        #searchToggle:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+        #searchOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            cursor: default;
+        }
+        /* Скрываем старую иконку в заголовке */
+        .header-search-icon {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -154,12 +225,16 @@
 <hr>
 <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
     <h3 style="margin: 0;">Наличие образцов</h3>
-    <span id="searchToggle" style="cursor: pointer; font-size: 24px; user-select: none;" title="Поиск по артикулам">🔍</span>
+    <!-- Старая иконка лупы скрыта, вместо неё используется фиксированная кнопка -->
 </div>
-<div id="itemSearchContainer" style="display: none;">
+
+<!-- Контейнер для поиска артикулов (popup) -->
+<div id="itemSearchContainer">
     <input type="text" id="itemSearchInput" placeholder="Введите артикул...">
     <div id="itemSuggestList" class="suggest-list"></div>
 </div>
+<!-- Оверлей для затемнения фона -->
+<div id="searchOverlay"></div>
 
 <div class="stands-section">
     <div class="section-title">Стенды</div>
@@ -195,8 +270,8 @@
 
 <div id="checklist"></div>
 
-<label for="comment">Комментарий:</label>
-<textarea id="comment" rows="3" placeholder="Введите комментарий по точке..."></textarea>
+<label for="comment">Задачи на следующий визит:</label>
+<textarea id="comment" rows="3" placeholder="Введите задачи на следующий визит..."></textarea>
 
 <button id="submitBtn">📤 Добавить в очередь и отправить (при наличии сети)</button>
 
@@ -212,6 +287,9 @@
 </div>
 
 <div id="toast-container"></div>
+
+<!-- Фиксированная кнопка-лупа -->
+<span id="searchToggle">🔍</span>
 
 <script>
     // =====================================================
@@ -851,14 +929,120 @@
             searchInput.value = '';
             suggestList.style.display = 'none';
             isManual = false;
-            const searchContainer = document.getElementById('itemSearchContainer');
-            const itemSearchInput = document.getElementById('itemSearchInput');
-            const itemSuggestList = document.getElementById('itemSuggestList');
-            if (searchContainer) searchContainer.style.display = 'none';
-            if (itemSearchInput) itemSearchInput.value = '';
-            if (itemSuggestList) itemSuggestList.style.display = 'none';
+            // Закрыть поиск артикулов, если открыт
+            closeSearchPopup();
             searchInput.blur();
         }
+
+        // --- ЛОГИКА ДЛЯ ПОИСКА АРТИКУЛОВ (попап) ---
+        const searchToggle = document.getElementById('searchToggle');
+        const searchContainer = document.getElementById('itemSearchContainer');
+        const searchOverlay = document.getElementById('searchOverlay');
+        const itemSearchInput = document.getElementById('itemSearchInput');
+        const itemSuggestList = document.getElementById('itemSuggestList');
+
+        function openSearchPopup() {
+            searchContainer.style.display = 'block';
+            searchOverlay.style.display = 'block';
+            itemSearchInput.value = '';
+            itemSuggestList.style.display = 'none';
+            itemSearchInput.focus();
+        }
+
+        function closeSearchPopup() {
+            searchContainer.style.display = 'none';
+            searchOverlay.style.display = 'none';
+            itemSuggestList.style.display = 'none';
+        }
+
+        searchToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Если попап уже открыт, закрываем, иначе открываем
+            if (searchContainer.style.display === 'block') {
+                closeSearchPopup();
+            } else {
+                openSearchPopup();
+            }
+        });
+
+        // Закрытие по клику на overlay
+        searchOverlay.addEventListener('click', function() {
+            closeSearchPopup();
+        });
+
+        // Логика поиска артикулов (всё как было, но с закрытием попапа при выборе)
+        itemSearchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            if (query.length === 0) {
+                itemSuggestList.style.display = 'none';
+                return;
+            }
+            const results = itemsRaw.filter(item => 
+                item.name.toLowerCase().includes(query)
+            ).slice(0, 15);
+            if (results.length === 0) {
+                itemSuggestList.innerHTML = '<div style="padding:10px; color:#666;">Артикулов не найдено</div>';
+                itemSuggestList.style.display = 'block';
+                return;
+            }
+            let html = '';
+            results.forEach(item => {
+                const name = item.name;
+                const lowerName = name.toLowerCase();
+                const index = lowerName.indexOf(query);
+                let displayName = name;
+                if (index !== -1) {
+                    const before = name.substring(0, index);
+                    const match = name.substring(index, index + query.length);
+                    const after = name.substring(index + query.length);
+                    displayName = before + '<span class="highlight-match">' + match + '</span>' + after;
+                }
+                html += `<div class="suggest-item" data-articul="${name}">
+                            <div class="name">${displayName}</div>
+                            <div style="font-size:12px; color:#888;">${item.format}</div>
+                        </div>`;
+            });
+            itemSuggestList.innerHTML = html;
+            itemSuggestList.style.display = 'block';
+
+            itemSuggestList.querySelectorAll('.suggest-item').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const articul = this.dataset.articul;
+                    const items = document.querySelectorAll('.item');
+                    let target = null;
+                    for (let item of items) {
+                        const nameSpan = item.querySelector('.item-name');
+                        if (nameSpan && nameSpan.textContent.trim() === articul) {
+                            target = item;
+                            break;
+                        }
+                    }
+                    if (target) {
+                        document.querySelectorAll('.highlight-item').forEach(el => el.classList.remove('highlight-item'));
+                        target.classList.add('highlight-item');
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Закрыть попап
+                        closeSearchPopup();
+                        itemSearchInput.value = '';
+                    } else {
+                        alert('Артикул не найден на странице.');
+                    }
+                });
+            });
+        });
+
+        // Закрытие по Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSearchPopup();
+            }
+        });
+
+        // Обработчик клика вне попапа (на document) – но у нас есть overlay, он перехватывает клик.
+        // Дополнительно: если клик внутри контейнера, не закрываем.
+
+        // --- Конец логики поиска артикулов ---
 
         submitBtn.addEventListener('click', async function() {
             const name = pointNameInput.value.trim();
@@ -988,105 +1172,7 @@
     })();
 
     // =====================================================
-    // 8. ПОИСК ПО АРТИКУЛАМ
-    // =====================================================
-    (function() {
-        const searchToggle = document.getElementById('searchToggle');
-        const searchContainer = document.getElementById('itemSearchContainer');
-        const searchInput = document.getElementById('itemSearchInput');
-        const suggestList = document.getElementById('itemSuggestList');
-
-        searchToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const isVisible = searchContainer.style.display === 'block';
-            searchContainer.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) {
-                searchInput.value = '';
-                suggestList.style.display = 'none';
-                searchInput.focus();
-            } else {
-                suggestList.style.display = 'none';
-            }
-        });
-
-        searchInput.addEventListener('input', function() {
-            const query = this.value.trim().toLowerCase();
-            if (query.length === 0) {
-                suggestList.style.display = 'none';
-                return;
-            }
-            const results = itemsRaw.filter(item => 
-                item.name.toLowerCase().includes(query)
-            ).slice(0, 15);
-            if (results.length === 0) {
-                suggestList.innerHTML = '<div style="padding:10px; color:#666;">Артикулов не найдено</div>';
-                suggestList.style.display = 'block';
-                return;
-            }
-            let html = '';
-            results.forEach(item => {
-                const name = item.name;
-                const lowerName = name.toLowerCase();
-                const index = lowerName.indexOf(query);
-                let displayName = name;
-                if (index !== -1) {
-                    const before = name.substring(0, index);
-                    const match = name.substring(index, index + query.length);
-                    const after = name.substring(index + query.length);
-                    displayName = before + '<span class="highlight-match">' + match + '</span>' + after;
-                }
-                html += `<div class="suggest-item" data-articul="${name}">
-                            <div class="name">${displayName}</div>
-                            <div style="font-size:12px; color:#888;">${item.format}</div>
-                        </div>`;
-            });
-            suggestList.innerHTML = html;
-            suggestList.style.display = 'block';
-
-            suggestList.querySelectorAll('.suggest-item').forEach(el => {
-                el.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const articul = this.dataset.articul;
-                    const items = document.querySelectorAll('.item');
-                    let target = null;
-                    for (let item of items) {
-                        const nameSpan = item.querySelector('.item-name');
-                        if (nameSpan && nameSpan.textContent.trim() === articul) {
-                            target = item;
-                            break;
-                        }
-                    }
-                    if (target) {
-                        document.querySelectorAll('.highlight-item').forEach(el => el.classList.remove('highlight-item'));
-                        target.classList.add('highlight-item');
-                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        suggestList.style.display = 'none';
-                        searchContainer.style.display = 'none';
-                        searchInput.value = '';
-                    } else {
-                        alert('Артикул не найден на странице.');
-                    }
-                });
-            });
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!searchContainer.contains(e.target) && e.target !== searchToggle) {
-                suggestList.style.display = 'none';
-            }
-        });
-
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                searchContainer.style.display = 'none';
-                suggestList.style.display = 'none';
-                searchInput.value = '';
-            }
-        });
-    })();
-
-    // =====================================================
-    // 9. МОДАЛЬНОЕ ОКНО
+    // 8. МОДАЛЬНОЕ ОКНО ДЛЯ ИЗОБРАЖЕНИЙ
     // =====================================================
     function openImage(src) {
         document.getElementById('modalImage').src = src;
@@ -1106,7 +1192,7 @@
     });
 
     // =====================================================
-    // 10. РЕГИСТРАЦИЯ SERVICE WORKER
+    // 9. РЕГИСТРАЦИЯ SERVICE WORKER
     // =====================================================
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
