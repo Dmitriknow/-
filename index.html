@@ -602,6 +602,18 @@
             return null;
         }
     }
+
+    // Принудительно обновляет кеш визитов из сети.
+    // Возвращает true, если получилось; false — если сети нет или сервер не ответил.
+    async function refreshVisitsCache() {
+        const fresh = await loadVisitsFromNetwork();
+        if (fresh && fresh.length) {
+            saveVisitsToStorage(keepOnlyLastPerPoint(fresh));
+            return true;
+        }
+        return false;
+    }
+
     async function getVisits() {
         let visits = loadVisitsFromStorage();
         if (!visits || visits.length === 0) {
@@ -943,12 +955,27 @@
             });
         });
 
+        // === ОБНОВЛЕНИЕ БАЗЫ: точки + визиты ===
         refreshPointsBtn.addEventListener('click', async function() {
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
-            const ok = await loadPointsFromNetwork();
-            if (ok) showToast('База точек обновлена!', 'success');
-            else showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
+
+            // Обновляем и точки, и визиты — параллельно
+            const [pointsOk, visitsOk] = await Promise.all([
+                loadPointsFromNetwork(),
+                refreshVisitsCache()
+            ]);
+
+            if (pointsOk && visitsOk) {
+                showToast('База точек и визитов обновлена!', 'success');
+            } else if (pointsOk) {
+                showToast('Точки обновлены, визиты не удалось загрузить.', 'warning');
+            } else if (visitsOk) {
+                showToast('Визиты обновлены, точки не удалось загрузить.', 'warning');
+            } else {
+                showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
+            }
+
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
         });
@@ -1090,13 +1117,13 @@
 
             if (!currentLastVisit) {
                 repeatInfo.textContent = '❌ Прошлых визитов по этой точке нет — заполните чек-лист вручную.';
-        } else {
-            // Подсказку с количеством образцов НЕ показываем —
-            // менеджер должен сам пересчитать образцы на выставке.
-            repeatInfo.textContent = '';
-            repeatOkBtn.disabled = false;
-            setTimeout(() => repeatCountInp.focus(), 100);
-        }
+            } else {
+                // Подсказку с количеством образцов НЕ показываем —
+                // менеджер должен сам пересчитать образцы на выставке.
+                repeatInfo.textContent = '';
+                repeatOkBtn.disabled = false;
+                setTimeout(() => repeatCountInp.focus(), 100);
+            }
         });
 
         repeatCancelBtn.addEventListener('click', () => {
