@@ -290,7 +290,6 @@
 
 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
     <button id="selectNoAllBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #f44336; color: white;">❌ Нет выставки</button>
-    <!-- === ПОВТОРНЫЙ ВИЗИТ: кнопка === -->
     <button id="repeatVisitBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #2196F3; color: white;">🔁 Повторный визит</button>
 </div>
 
@@ -312,7 +311,6 @@
     <img id="modalImage" src="" alt="Увеличенное изображение">
 </div>
 
-<!-- === ПОВТОРНЫЙ ВИЗИТ: модалка === -->
 <div class="repeat-modal-overlay" id="repeatModal">
     <div class="repeat-modal-box">
         <h3>🔁 Повторный визит</h3>
@@ -338,7 +336,22 @@
     const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
     const STORAGE_KEY_POINTS = 'offline_points_cache';
     const STORAGE_KEY_QUEUE = 'offline_reports_queue';
-    const STORAGE_KEY_VISITS = 'offline_visits_cache'; // === ПОВТОРНЫЙ ВИЗИТ ===
+    const STORAGE_KEY_VISITS = 'offline_visits_cache';
+
+    // Универсальный fetch с таймаутом — чтобы «висячие» запросы
+    // не блокировали UI навсегда
+    function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+        return new Promise((resolve, reject) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => {
+                controller.abort();
+                reject(new Error('Timeout ' + timeoutMs + 'ms'));
+            }, timeoutMs);
+            fetch(url, { ...options, signal: controller.signal })
+                .then(resp => { clearTimeout(timer); resolve(resp); })
+                .catch(err => { clearTimeout(timer); reject(err); });
+        });
+    }
 
     // =====================================================
     // 2. ВСЕ АРТИКУЛЫ
@@ -447,6 +460,9 @@
     function saveVisitsToStorage(visits) {
         try { localStorage.setItem(STORAGE_KEY_VISITS, JSON.stringify(visits)); } catch(e) {}
     }
+    function clearVisitsFromStorage() {
+        try { localStorage.removeItem(STORAGE_KEY_VISITS); } catch(e) {}
+    }
 
     // =====================================================
     // 4. ЗАГРУЗКА ТОЧЕК
@@ -504,7 +520,7 @@
 
     async function loadPointsFromNetwork() {
         try {
-            const response = await fetch(CSV_URL);
+            const response = await fetchWithTimeout(CSV_URL, {}, 15000);
             if (!response.ok) throw new Error('Network error');
             const csvText = await response.text();
             const parsed = parseCSV(csvText);
@@ -592,7 +608,7 @@
     // =====================================================
     async function loadVisitsFromNetwork() {
         try {
-            const resp = await fetch(SCRIPT_URL + '?action=getVisits', { method: 'GET' });
+            const resp = await fetchWithTimeout(SCRIPT_URL + '?action=getVisits', { method: 'GET' }, 20000);
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const data = await resp.json();
             if (Array.isArray(data)) return data;
@@ -604,13 +620,16 @@
     }
 
     // Принудительно обновляет кеш визитов из сети.
-    // Возвращает true, если получилось; false — если сети нет или сервер не ответил.
+    // Кеш полностью очищается и перезаписывается заново — без «схлопывания».
     async function refreshVisitsCache() {
         const fresh = await loadVisitsFromNetwork();
         if (fresh && fresh.length) {
-            saveVisitsToStorage(keepOnlyLastPerPoint(fresh));
+            clearVisitsFromStorage();
+            saveVisitsToStorage(fresh);
+            console.log('Кеш визитов обновлён:', fresh.length, 'записей');
             return true;
         }
+        console.warn('refreshVisitsCache: сервер вернул пусто, кеш не тронут');
         return false;
     }
 
@@ -619,55 +638,33 @@
         if (!visits || visits.length === 0) {
             const fresh = await loadVisitsFromNetwork();
             if (fresh && fresh.length) {
-                const compact = keepOnlyLastPerPoint(fresh);
-                saveVisitsToStorage(compact);
-                visits = compact;
+                clearVisitsFromStorage();
+                saveVisitsToStorage(fresh);
+                visits = fresh;
             } else {
                 visits = visits || [];
             }
         } else if (navigator.onLine) {
             loadVisitsFromNetwork().then(fresh => {
                 if (fresh && fresh.length) {
-                    saveVisitsToStorage(keepOnlyLastPerPoint(fresh));
+                    clearVisitsFromStorage();
+                    saveVisitsToStorage(fresh);
                 }
             });
         }
         return visits;
     }
 
-    // Оставляем только последний визит по каждой паре (точка + адрес)
-    // — чтобы localStorage не разрастался до лимита 5 МБ
-    function keepOnlyLastPerPoint(visits) {
-        const norm = s => (s || '').trim().toLowerCase();
-        const map = new Map();
-        for (const v of visits) {
-            const key = norm(v.pointName) + '|' + norm(v.pointAddress);
-            const prev = map.get(key);
-            if (!prev) {
-                map.set(key, v);
-                continue;
-            }
-            const tNew  = Date.parse(v.timestamp);
-            const tPrev = Date.parse(prev.timestamp);
-            if (!isNaN(tNew) && !isNaN(tPrev)) {
-                // Если дата валидна — сравниваем по времени.
-                // При равенстве оставляем последний в массиве (он «свежее» по порядку листа).
-                if (tNew >= tPrev) map.set(key, v);
-            } else {
-                // Если дата не парсится — просто перезаписываем.
-                // Сервер отдаёт строки в порядке листа снизу вверх (старые → новые),
-                // значит последняя встреченная = самая новая.
-                map.set(key, v);
-            }
-        }
-        return Array.from(map.values());
-    }
     function findLastVisit(visits, pointName, pointAddress) {
         const norm = s => (s || '').trim().toLowerCase();
         const key = norm(pointName) + '|' + norm(pointAddress);
         const matches = visits.filter(v => (norm(v.pointName) + '|' + norm(v.pointAddress)) === key);
         if (matches.length === 0) return null;
-        matches.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        matches.sort((a, b) => {
+            const ta = Date.parse(a.timestamp) || 0;
+            const tb = Date.parse(b.timestamp) || 0;
+            return tb - ta;
+        });
         return matches[0];
     }
     // items — объект { "артикул": "Есть"/"Нет" }
@@ -973,11 +970,20 @@
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
 
-            // Обновляем и точки, и визиты — параллельно
-            const [pointsOk, visitsOk] = await Promise.all([
+            // allSettled — не падает целиком, если один из запросов не удался
+            const results = await Promise.allSettled([
                 loadPointsFromNetwork(),
                 refreshVisitsCache()
             ]);
+
+            const pointsOk = results[0].status === 'fulfilled' && results[0].value === true;
+            const visitsOk = results[1].status === 'fulfilled' && results[1].value === true;
+
+            console.log('Обновление базы:', {
+                points: results[0].status, pointsOk,
+                visits: results[1].status, visitsOk,
+                visitsReason: results[1].reason ? String(results[1].reason) : null
+            });
 
             if (pointsOk && visitsOk) {
                 showToast('База точек и визитов обновлена!', 'success');
@@ -997,7 +1003,6 @@
             document.querySelectorAll('.btn-group button').forEach(btn => {
                 btn.classList.remove('selected-yes', 'selected-no');
             });
-            // ПОВТОРНЫЙ ВИЗИТ: снять подсветку отсутствующих
             document.querySelectorAll('.item.highlight-missing').forEach(el => el.classList.remove('highlight-missing'));
 
             document.getElementById('stand1').value = 0;
