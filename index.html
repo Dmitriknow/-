@@ -643,7 +643,20 @@
         for (const v of visits) {
             const key = norm(v.pointName) + '|' + norm(v.pointAddress);
             const prev = map.get(key);
-            if (!prev || new Date(v.timestamp) > new Date(prev.timestamp)) {
+            if (!prev) {
+                map.set(key, v);
+                continue;
+            }
+            const tNew  = Date.parse(v.timestamp);
+            const tPrev = Date.parse(prev.timestamp);
+            if (!isNaN(tNew) && !isNaN(tPrev)) {
+                // Если дата валидна — сравниваем по времени.
+                // При равенстве оставляем последний в массиве (он «свежее» по порядку листа).
+                if (tNew >= tPrev) map.set(key, v);
+            } else {
+                // Если дата не парсится — просто перезаписываем.
+                // Сервер отдаёт строки в порядке листа снизу вверх (старые → новые),
+                // значит последняя встреченная = самая новая.
                 map.set(key, v);
             }
         }
