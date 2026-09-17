@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
     <style>
-        /* (весь ваш CSS остаётся без изменений, кроме добавленных стилей для фиксированной кнопки и попапа) */
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
         .item img { width: 80px; height: auto; display: block; margin: 5px 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.15s ease; }
@@ -68,8 +67,8 @@
         #db-status.loaded { background: #d4edda; color: #155724; }
         #db-status.error { background: #f8d7da; color: #721c24; }
         #db-status.cached { background: #cce5ff; color: #004085; }
-        #itemSearchContainer { 
-            display: none; 
+        #itemSearchContainer {
+            display: none;
             position: fixed;
             top: 50%;
             left: 50%;
@@ -83,30 +82,28 @@
             max-width: 400px;
             margin: 0;
         }
-        #itemSearchContainer input { 
-            width: 100%; 
-            padding: 10px; 
-            font-size: 16px; 
-            box-sizing: border-box; 
-            border: 1px solid #ccc; 
-            border-radius: 5px; 
+        #itemSearchContainer input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
-        #itemSuggestList { 
-            background: white; 
-            border: 1px solid #ccc; 
-            border-top: none; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            margin-top: 0; 
-            border-radius: 0 0 5px 5px; 
-            display: none; 
+        #itemSuggestList {
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 0;
+            border-radius: 0 0 5px 5px;
+            display: none;
         }
         .suggest-item .highlight-match { font-weight: bold; background: #ffeb3b; }
         .highlight-item { animation: highlightPulse 1s ease 3; }
         @keyframes highlightPulse { 0% { background: #fff9c4; } 50% { background: #ffeb3b; } 100% { background: #fff9c4; } }
-        .input-error {
-            border: 2px solid red !important;
-        }
+        .input-error { border: 2px solid red !important; }
         #toast-container {
             position: fixed;
             top: 20px;
@@ -135,16 +132,12 @@
             width: 100%;
             text-align: center;
         }
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .toast.show { opacity: 1; transform: translateY(0); }
         .toast.success { background: #28a745; }
         .toast.info { background: #17a2b8; }
         .toast.warning { background: #ffc107; color: #333; }
         .toast.error { background: #dc3545; }
 
-        /* --- ДОБАВЛЕННЫЕ СТИЛИ ДЛЯ ФИКСИРОВАННОЙ КНОПКИ И ОВЕРЛЕЯ --- */
         #searchToggle {
             position: fixed;
             bottom: 25px;
@@ -165,10 +158,7 @@
             user-select: none;
             line-height: 1;
         }
-        #searchToggle:hover {
-            background: #0056b3;
-            transform: scale(1.05);
-        }
+        #searchToggle:hover { background: #0056b3; transform: scale(1.05); }
         #searchOverlay {
             position: fixed;
             top: 0;
@@ -180,10 +170,47 @@
             display: none;
             cursor: default;
         }
-        /* Скрываем старую иконку в заголовке */
-        .header-search-icon {
-            display: none;
+        .header-search-icon { display: none; }
+
+        /* === ПОВТОРНЫЙ ВИЗИТ: подсветка отсутствующих образцов === */
+        .item.highlight-missing {
+            border: 2px solid #ff5722;
+            background: #fff3e0;
+            box-shadow: 0 0 12px rgba(255,87,34,0.35);
+            animation: pulseMissing 1.6s ease-in-out infinite;
         }
+        @keyframes pulseMissing {
+            0%,100% { box-shadow: 0 0 12px rgba(255,87,34,0.35); }
+            50%     { box-shadow: 0 0 22px rgba(255,87,34,0.65); }
+        }
+
+        /* === ПОВТОРНЫЙ ВИЗИТ: модальное окно === */
+        .repeat-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); z-index: 10000;
+            justify-content: center; align-items: center;
+        }
+        .repeat-modal-overlay.active { display: flex; }
+        .repeat-modal-box {
+            background: #fff; padding: 24px; border-radius: 10px;
+            max-width: 420px; width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+        }
+        .repeat-modal-box h3 { margin: 0 0 10px; }
+        .repeat-modal-box p { margin: 0 0 14px; color: #555; font-size: 14px; }
+        .repeat-modal-box input {
+            width: 100%; padding: 12px; font-size: 22px; text-align: center;
+            box-sizing: border-box; border: 2px solid #ddd; border-radius: 6px;
+        }
+        .repeat-modal-box .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+        .repeat-modal-box .btn-row button {
+            flex: 1; padding: 12px; font-size: 16px; border: none;
+            border-radius: 6px; cursor: pointer;
+        }
+        .repeat-ok { background: #4CAF50; color: #fff; }
+        .repeat-ok:disabled { opacity: 0.5; cursor: default; }
+        .repeat-cancel { background: #999; color: #fff; }
+        #repeatVisitInfo { font-size: 13px; color: #666; margin-top: 8px; min-height: 18px; }
     </style>
 </head>
 <body>
@@ -225,15 +252,12 @@
 <hr>
 <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
     <h3 style="margin: 0;">Наличие образцов</h3>
-    <!-- Старая иконка лупы скрыта, вместо неё используется фиксированная кнопка -->
 </div>
 
-<!-- Контейнер для поиска артикулов (popup) -->
 <div id="itemSearchContainer">
     <input type="text" id="itemSearchInput" placeholder="Введите артикул...">
     <div id="itemSuggestList" class="suggest-list"></div>
 </div>
-<!-- Оверлей для затемнения фона -->
 <div id="searchOverlay"></div>
 
 <div class="stands-section">
@@ -266,6 +290,8 @@
 
 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
     <button id="selectNoAllBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #f44336; color: white;">❌ Нет выставки</button>
+    <!-- === ПОВТОРНЫЙ ВИЗИТ: кнопка === -->
+    <button id="repeatVisitBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #2196F3; color: white;">🔁 Повторный визит</button>
 </div>
 
 <div id="checklist"></div>
@@ -286,22 +312,36 @@
     <img id="modalImage" src="" alt="Увеличенное изображение">
 </div>
 
+<!-- === ПОВТОРНЫЙ ВИЗИТ: модалка === -->
+<div class="repeat-modal-overlay" id="repeatModal">
+    <div class="repeat-modal-box">
+        <h3>🔁 Повторный визит</h3>
+        <p>Укажите количество образцов, которые сейчас на выставке:</p>
+        <input type="number" id="repeatCountInput" min="0" step="1" placeholder="0">
+        <div id="repeatVisitInfo"></div>
+        <div class="btn-row">
+            <button class="repeat-ok" id="repeatOkBtn">Проверить и заполнить</button>
+            <button class="repeat-cancel" id="repeatCancelBtn">Отмена</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast-container"></div>
 
-<!-- Фиксированная кнопка-лупа -->
 <span id="searchToggle">🔍</span>
 
 <script>
     // =====================================================
     // 1. НАСТРОЙКИ
     // =====================================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxblBdosmIJ8zDs7Dn-cBN3wqjsYcXeaNuyPK2i3tIbtiZ7UH5xyY5P0q0lV2IEgI7f/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrDrZntyt4_by9gtoEoi9zLW5JUAMPzLzmuR0ZyuB_fIKhx_UXrLkZpVHWwOU_ATOa/exec';
     const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
     const STORAGE_KEY_POINTS = 'offline_points_cache';
     const STORAGE_KEY_QUEUE = 'offline_reports_queue';
+    const STORAGE_KEY_VISITS = 'offline_visits_cache'; // === ПОВТОРНЫЙ ВИЗИТ ===
 
     // =====================================================
-    // 2. ВСЕ АРТИКУЛЫ (полный список)
+    // 2. ВСЕ АРТИКУЛЫ
     // =====================================================
     const itemsRaw = [
         { name: 'MNLIT-11M\\B12503', image: 'https://static.tildacdn.com/stor6462-3231-4535-b366-306565393434/cdc4d5dd0fdd09d0cabe0e2fc17fca32.png', format: '60x120' },
@@ -364,7 +404,7 @@
     ];
 
     // =====================================================
-    // 3. РАБОТА С ХРАНИЛИЩЕМ (localStorage)
+    // 3. ХРАНИЛИЩЕ (localStorage)
     // =====================================================
     function loadPointsFromStorage() {
         try {
@@ -376,13 +416,9 @@
         } catch(e) {}
         return null;
     }
-
     function savePointsToStorage(data) {
-        try {
-            localStorage.setItem(STORAGE_KEY_POINTS, JSON.stringify(data));
-        } catch(e) {}
+        try { localStorage.setItem(STORAGE_KEY_POINTS, JSON.stringify(data)); } catch(e) {}
     }
-
     function loadQueueFromStorage() {
         try {
             const data = localStorage.getItem(STORAGE_KEY_QUEUE);
@@ -393,15 +429,27 @@
         } catch(e) {}
         return [];
     }
-
     function saveQueueToStorage(queue) {
+        try { localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(queue)); } catch(e) {}
+    }
+
+    // === ПОВТОРНЫЙ ВИЗИТ: хранилище визитов ===
+    function loadVisitsFromStorage() {
         try {
-            localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(queue));
+            const data = localStorage.getItem(STORAGE_KEY_VISITS);
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed)) return parsed;
+            }
         } catch(e) {}
+        return null;
+    }
+    function saveVisitsToStorage(visits) {
+        try { localStorage.setItem(STORAGE_KEY_VISITS, JSON.stringify(visits)); } catch(e) {}
     }
 
     // =====================================================
-    // 4. ЗАГРУЗКА ТОЧЕК (сеть + кеш)
+    // 4. ЗАГРУЗКА ТОЧЕК
     // =====================================================
     let pointsData = [];
     let dataLoaded = false;
@@ -533,12 +581,74 @@
             const name = (p.name || '').toLowerCase();
             const addr = (p.address || '').toLowerCase();
             const city = (p.city || '').toLowerCase();
-            if (name.includes(q) || addr.includes(q) || city.includes(q)) {
-                results.push(p);
-            }
+            if (name.includes(q) || addr.includes(q) || city.includes(q)) results.push(p);
             if (results.length >= 50) break;
         }
         return results;
+    }
+
+    // =====================================================
+    // 4b. ВИЗИТЫ (ДЛЯ ПОВТОРНОГО ВИЗИТА)
+    // =====================================================
+    async function loadVisitsFromNetwork() {
+        try {
+            const resp = await fetch(SCRIPT_URL + '?action=getVisits', { method: 'GET' });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            if (Array.isArray(data)) return data;
+            throw new Error('bad format');
+        } catch (e) {
+            console.warn('Не удалось загрузить визиты:', e);
+            return null;
+        }
+    }
+    async function getVisits() {
+        let visits = loadVisitsFromStorage();
+        if (!visits || visits.length === 0) {
+            const fresh = await loadVisitsFromNetwork();
+            if (fresh && fresh.length) {
+                const compact = keepOnlyLastPerPoint(fresh);
+                saveVisitsToStorage(compact);
+                visits = compact;
+            } else {
+                visits = visits || [];
+            }
+        } else if (navigator.onLine) {
+            loadVisitsFromNetwork().then(fresh => {
+                if (fresh && fresh.length) {
+                    saveVisitsToStorage(keepOnlyLastPerPoint(fresh));
+                }
+            });
+        }
+        return visits;
+    }
+
+    // Оставляем только последний визит по каждой паре (точка + адрес)
+    // — чтобы localStorage не разрастался до лимита 5 МБ
+    function keepOnlyLastPerPoint(visits) {
+        const norm = s => (s || '').trim().toLowerCase();
+        const map = new Map();
+        for (const v of visits) {
+            const key = norm(v.pointName) + '|' + norm(v.pointAddress);
+            const prev = map.get(key);
+            if (!prev || new Date(v.timestamp) > new Date(prev.timestamp)) {
+                map.set(key, v);
+            }
+        }
+        return Array.from(map.values());
+    }
+    function findLastVisit(visits, pointName, pointAddress) {
+        const norm = s => (s || '').trim().toLowerCase();
+        const key = norm(pointName) + '|' + norm(pointAddress);
+        const matches = visits.filter(v => (norm(v.pointName) + '|' + norm(v.pointAddress)) === key);
+        if (matches.length === 0) return null;
+        matches.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        return matches[0];
+    }
+    // items — объект { "артикул": "Есть"/"Нет" }
+    function countSamples(visit) {
+        if (!visit || !visit.items) return 0;
+        return Object.values(visit.items).filter(s => s === 'Есть').length;
     }
 
     // =====================================================
@@ -576,14 +686,8 @@
 
     async function syncAllReports() {
         const queue = await getQueue();
-        if (queue.length === 0) {
-            updateStatus('Нет отчётов для синхронизации');
-            return;
-        }
-        if (!navigator.onLine) {
-            updateStatus('Нет интернета – отложено');
-            return;
-        }
+        if (queue.length === 0) { updateStatus('Нет отчётов для синхронизации'); return; }
+        if (!navigator.onLine) { updateStatus('Нет интернета – отложено'); return; }
         updateStatus(`Синхронизация (${queue.length} шт.)...`);
         document.getElementById('sync-btn').disabled = true;
         let successCount = 0;
@@ -600,11 +704,8 @@
         }
         await updateQueueUI();
         document.getElementById('sync-btn').disabled = false;
-        if (failedIds.length === 0) {
-            updateStatus(`✅ Все ${successCount} отчётов отправлены!`);
-        } else {
-            updateStatus(`⚠️ Отправлено ${successCount}, ${failedIds.length} не удалось`);
-        }
+        if (failedIds.length === 0) updateStatus(`✅ Все ${successCount} отчётов отправлены!`);
+        else updateStatus(`⚠️ Отправлено ${successCount}, ${failedIds.length} не удалось`);
     }
 
     async function updateQueueUI() {
@@ -629,14 +730,10 @@
         toast.className = `toast ${type}`;
         toast.textContent = message;
         container.appendChild(toast);
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-        });
+        requestAnimationFrame(() => toast.classList.add('show'));
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 300);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
         }, 3500);
     }
 
@@ -664,13 +761,8 @@
         const refreshPointsBtn = document.getElementById('refreshPointsBtn');
 
         const managers = [
-            'Кошелев Дмитрий',
-            'Нигматулина Наталья',
-            'Измайлова Оксана',
-            'Мухтеремова Елена',
-            'Варламичев Данила',
-            'Балахонов Владислав',
-            'Пушин Дмитрий'
+            'Кошелев Дмитрий','Нигматулина Наталья','Измайлова Оксана',
+            'Мухтеремова Елена','Варламичев Данила','Балахонов Владислав','Пушин Дмитрий'
         ];
 
         function filterManagers(query) {
@@ -685,9 +777,7 @@
                 return;
             }
             let html = '';
-            items.forEach(name => {
-                html += `<div class="manager-suggest-item" data-name="${name}">${name}</div>`;
-            });
+            items.forEach(name => { html += `<div class="manager-suggest-item" data-name="${name}">${name}</div>`; });
             managerSuggestList.innerHTML = html;
             managerSuggestList.style.display = 'block';
             managerSuggestList.querySelectorAll('.manager-suggest-item').forEach(el => {
@@ -698,47 +788,29 @@
                 });
             });
         }
-
         managerInput.addEventListener('input', function() {
             const query = this.value.trim();
-            if (query.length === 0) {
-                renderManagerSuggestions(managers);
-                return;
-            }
-            const filtered = filterManagers(query);
-            renderManagerSuggestions(filtered);
+            if (query.length === 0) { renderManagerSuggestions(managers); return; }
+            renderManagerSuggestions(filterManagers(query));
             this.classList.remove('input-error');
         });
         managerInput.addEventListener('focus', function() {
-            if (this.value.trim() === '') {
-                renderManagerSuggestions(managers);
-            } else {
-                const filtered = filterManagers(this.value);
-                renderManagerSuggestions(filtered);
-            }
+            if (this.value.trim() === '') renderManagerSuggestions(managers);
+            else renderManagerSuggestions(filterManagers(this.value));
         });
         managerInput.addEventListener('blur', function() {
             setTimeout(() => { managerSuggestList.style.display = 'none'; }, 200);
         });
 
-        // Снятие подсветки при вводе
-        pointNameInput.addEventListener('input', function() {
-            this.classList.remove('input-error');
-        });
-        pointAddressInput.addEventListener('input', function() {
-            this.classList.remove('input-error');
-        });
+        pointNameInput.addEventListener('input', function() { this.classList.remove('input-error'); });
+        pointAddressInput.addEventListener('input', function() { this.classList.remove('input-error'); });
 
         newPointBtn.addEventListener('click', function() {
             isManual = true;
-            pointNameInput.value = '';
-            pointAddressInput.value = '';
-            pointCityInput.value = '';
-            pointCoordsInput.value = '';
-            pointNameInput.readOnly = false;
-            pointAddressInput.readOnly = false;
-            pointCityInput.readOnly = false;
-            pointCoordsInput.readOnly = false;
+            pointNameInput.value = ''; pointAddressInput.value = '';
+            pointCityInput.value = ''; pointCoordsInput.value = '';
+            pointNameInput.readOnly = false; pointAddressInput.readOnly = false;
+            pointCityInput.readOnly = false; pointCoordsInput.readOnly = false;
             pointAddressInput.style.background = '#fff';
             pointCityInput.style.background = '#fff';
             pointCoordsInput.style.background = '#fff';
@@ -755,26 +827,18 @@
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimer);
             const query = this.value.trim();
-            if (query.length < 1) {
-                suggestList.style.display = 'none';
-                return;
-            }
-            searchTimer = setTimeout(() => {
-                performSearch(query);
-            }, 150);
+            if (query.length < 1) { suggestList.style.display = 'none'; return; }
+            searchTimer = setTimeout(() => { performSearch(query); }, 150);
         });
-
         function performSearch(query) {
             if (!dataLoaded) {
                 suggestList.innerHTML = '<div style="padding:10px; color:#666;">⏳ Данные загружаются...</div>';
-                suggestList.style.display = 'block';
-                return;
+                suggestList.style.display = 'block'; return;
             }
             const results = searchPoints(query);
             if (results.length === 0) {
                 suggestList.innerHTML = '<div style="padding:10px; color:#666;">Ничего не найдено</div>';
-                suggestList.style.display = 'block';
-                return;
+                suggestList.style.display = 'block'; return;
             }
             let html = '';
             results.forEach(item => {
@@ -790,27 +854,20 @@
             });
             suggestList.innerHTML = html;
             suggestList.style.display = 'block';
-
             suggestList.querySelectorAll('.suggest-item').forEach(el => {
                 el.addEventListener('click', function() {
-                    const name = this.dataset.name;
-                    const addr = this.dataset.addr;
-                    const city = this.dataset.city;
-                    const coords = this.dataset.coords;
                     isManual = false;
-                    pointNameInput.value = name;
-                    pointAddressInput.value = addr;
-                    pointCityInput.value = city;
-                    pointCoordsInput.value = coords;
-                    pointNameInput.readOnly = true;
-                    pointAddressInput.readOnly = true;
-                    pointCityInput.readOnly = true;
-                    pointCoordsInput.readOnly = true;
+                    pointNameInput.value = this.dataset.name;
+                    pointAddressInput.value = this.dataset.addr;
+                    pointCityInput.value = this.dataset.city;
+                    pointCoordsInput.value = this.dataset.coords;
+                    pointNameInput.readOnly = true; pointAddressInput.readOnly = true;
+                    pointCityInput.readOnly = true; pointCoordsInput.readOnly = true;
                     pointAddressInput.style.background = '#f5f5f5';
                     pointCityInput.style.background = '#f5f5f5';
                     pointCoordsInput.style.background = '#f5f5f5';
                     suggestList.style.display = 'none';
-                    searchInput.value = name;
+                    searchInput.value = this.dataset.name;
                     pointFields.style.display = 'block';
                     pointNameInput.classList.remove('input-error');
                     pointAddressInput.classList.remove('input-error');
@@ -866,11 +923,8 @@
                 const input = document.getElementById(targetId);
                 if (!input) return;
                 let val = parseInt(input.value) || 0;
-                if (this.classList.contains('stand-minus')) {
-                    val = Math.max(0, val - 1);
-                } else {
-                    val = val + 1;
-                }
+                if (this.classList.contains('stand-minus')) val = Math.max(0, val - 1);
+                else val = val + 1;
                 input.value = val;
             });
         });
@@ -893,11 +947,8 @@
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
             const ok = await loadPointsFromNetwork();
-            if (ok) {
-                showToast('База точек обновлена!', 'success');
-            } else {
-                showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
-            }
+            if (ok) showToast('База точек обновлена!', 'success');
+            else showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
         });
@@ -906,6 +957,9 @@
             document.querySelectorAll('.btn-group button').forEach(btn => {
                 btn.classList.remove('selected-yes', 'selected-no');
             });
+            // ПОВТОРНЫЙ ВИЗИТ: снять подсветку отсутствующих
+            document.querySelectorAll('.item.highlight-missing').forEach(el => el.classList.remove('highlight-missing'));
+
             document.getElementById('stand1').value = 0;
             document.getElementById('stand2').value = 0;
             commentInput.value = '';
@@ -915,26 +969,21 @@
             pointNameInput.classList.remove('input-error');
             pointAddressInput.classList.remove('input-error');
             pointFields.style.display = 'none';
-            pointNameInput.value = '';
-            pointAddressInput.value = '';
-            pointCityInput.value = '';
-            pointCoordsInput.value = '';
-            pointNameInput.readOnly = true;
-            pointAddressInput.readOnly = true;
-            pointCityInput.readOnly = true;
-            pointCoordsInput.readOnly = true;
+            pointNameInput.value = ''; pointAddressInput.value = '';
+            pointCityInput.value = ''; pointCoordsInput.value = '';
+            pointNameInput.readOnly = true; pointAddressInput.readOnly = true;
+            pointCityInput.readOnly = true; pointCoordsInput.readOnly = true;
             pointAddressInput.style.background = '#f5f5f5';
             pointCityInput.style.background = '#f5f5f5';
             pointCoordsInput.style.background = '#f5f5f5';
             searchInput.value = '';
             suggestList.style.display = 'none';
             isManual = false;
-            // Закрыть поиск артикулов, если открыт
             closeSearchPopup();
             searchInput.blur();
         }
 
-        // --- ЛОГИКА ДЛЯ ПОИСКА АРТИКУЛОВ (попап) ---
+        // --- ПОИСК АРТИКУЛОВ (попап) ---
         const searchToggle = document.getElementById('searchToggle');
         const searchContainer = document.getElementById('itemSearchContainer');
         const searchOverlay = document.getElementById('searchOverlay');
@@ -948,42 +997,25 @@
             itemSuggestList.style.display = 'none';
             itemSearchInput.focus();
         }
-
         function closeSearchPopup() {
             searchContainer.style.display = 'none';
             searchOverlay.style.display = 'none';
             itemSuggestList.style.display = 'none';
         }
-
         searchToggle.addEventListener('click', function(e) {
             e.stopPropagation();
-            // Если попап уже открыт, закрываем, иначе открываем
-            if (searchContainer.style.display === 'block') {
-                closeSearchPopup();
-            } else {
-                openSearchPopup();
-            }
+            if (searchContainer.style.display === 'block') closeSearchPopup();
+            else openSearchPopup();
         });
+        searchOverlay.addEventListener('click', function() { closeSearchPopup(); });
 
-        // Закрытие по клику на overlay
-        searchOverlay.addEventListener('click', function() {
-            closeSearchPopup();
-        });
-
-        // Логика поиска артикулов (всё как было, но с закрытием попапа при выборе)
         itemSearchInput.addEventListener('input', function() {
             const query = this.value.trim().toLowerCase();
-            if (query.length === 0) {
-                itemSuggestList.style.display = 'none';
-                return;
-            }
-            const results = itemsRaw.filter(item => 
-                item.name.toLowerCase().includes(query)
-            ).slice(0, 15);
+            if (query.length === 0) { itemSuggestList.style.display = 'none'; return; }
+            const results = itemsRaw.filter(item => item.name.toLowerCase().includes(query)).slice(0, 15);
             if (results.length === 0) {
                 itemSuggestList.innerHTML = '<div style="padding:10px; color:#666;">Артикулов не найдено</div>';
-                itemSuggestList.style.display = 'block';
-                return;
+                itemSuggestList.style.display = 'block'; return;
             }
             let html = '';
             results.forEach(item => {
@@ -1004,7 +1036,6 @@
             });
             itemSuggestList.innerHTML = html;
             itemSuggestList.style.display = 'block';
-
             itemSuggestList.querySelectorAll('.suggest-item').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -1013,16 +1044,12 @@
                     let target = null;
                     for (let item of items) {
                         const nameSpan = item.querySelector('.item-name');
-                        if (nameSpan && nameSpan.textContent.trim() === articul) {
-                            target = item;
-                            break;
-                        }
+                        if (nameSpan && nameSpan.textContent.trim() === articul) { target = item; break; }
                     }
                     if (target) {
                         document.querySelectorAll('.highlight-item').forEach(el => el.classList.remove('highlight-item'));
                         target.classList.add('highlight-item');
                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        // Закрыть попап
                         closeSearchPopup();
                         itemSearchInput.value = '';
                     } else {
@@ -1031,19 +1058,113 @@
                 });
             });
         });
-
-        // Закрытие по Escape
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeSearchPopup();
-            }
+            if (e.key === 'Escape') closeSearchPopup();
         });
 
-        // Обработчик клика вне попапа (на document) – но у нас есть overlay, он перехватывает клик.
-        // Дополнительно: если клик внутри контейнера, не закрываем.
+        // =====================================================
+        // === ПОВТОРНЫЙ ВИЗИТ: логика ===
+        // =====================================================
+        const repeatBtn = document.getElementById('repeatVisitBtn');
+        const repeatModal = document.getElementById('repeatModal');
+        const repeatCountInp = document.getElementById('repeatCountInput');
+        const repeatOkBtn = document.getElementById('repeatOkBtn');
+        const repeatCancelBtn = document.getElementById('repeatCancelBtn');
+        const repeatInfo = document.getElementById('repeatVisitInfo');
+        let currentLastVisit = null;
 
-        // --- Конец логики поиска артикулов ---
+        repeatBtn.addEventListener('click', async () => {
+            const name = pointNameInput.value.trim();
+            const addr = pointAddressInput.value.trim();
+            if (!name || !addr) {
+                showToast('Сначала выберите точку из базы или создайте новую.', 'warning');
+                return;
+            }
+            repeatInfo.textContent = '⏳ Ищу прошлый визит...';
+            repeatCountInp.value = '';
+            repeatOkBtn.disabled = true;
+            repeatModal.classList.add('active');
 
+            const visits = await getVisits();
+            currentLastVisit = findLastVisit(visits, name, addr);
+
+            if (!currentLastVisit) {
+                repeatInfo.textContent = '❌ Прошлых визитов по этой точке нет — заполните чек-лист вручную.';
+        } else {
+            // Подсказку с количеством образцов НЕ показываем —
+            // менеджер должен сам пересчитать образцы на выставке.
+            repeatInfo.textContent = '';
+            repeatOkBtn.disabled = false;
+            setTimeout(() => repeatCountInp.focus(), 100);
+        }
+        });
+
+        repeatCancelBtn.addEventListener('click', () => {
+            repeatModal.classList.remove('active');
+            currentLastVisit = null;
+        });
+
+        repeatOkBtn.addEventListener('click', () => {
+            if (!currentLastVisit) return;
+            const entered = parseInt(repeatCountInp.value, 10);
+            if (isNaN(entered) || entered < 0) {
+                showToast('Введите корректное число образцов.', 'error');
+                return;
+            }
+            const expected = countSamples(currentLastVisit);
+            if (entered !== expected) {
+                showToast(`На выставке изменения: было ${expected}, стало ${entered}. Заполните заново.`, 'warning');
+                repeatModal.classList.remove('active');
+                currentLastVisit = null;
+                return;
+            }
+
+            const statusByName = currentLastVisit.items || {};
+            const missing = [];
+            document.querySelectorAll('.item').forEach(itemDiv => {
+                itemDiv.classList.remove('highlight-missing');
+                const nameEl = itemDiv.querySelector('.item-name');
+                if (!nameEl) return;
+                const itemName = nameEl.textContent.trim();
+                const status = statusByName[itemName];
+                if (!status) return;
+                const yesBtn = itemDiv.querySelector('.btn-group .yes');
+                const noBtn = itemDiv.querySelector('.btn-group .no');
+                if (status === 'Есть') yesBtn.click();
+                else if (status === 'Нет') {
+                    noBtn.click();
+                    itemDiv.classList.add('highlight-missing');
+                    missing.push(itemName);
+                }
+            });
+
+            if (typeof currentLastVisit.stand1 === 'number') document.getElementById('stand1').value = currentLastVisit.stand1;
+            if (typeof currentLastVisit.stand2 === 'number') document.getElementById('stand2').value = currentLastVisit.stand2;
+
+            // Комментарий НЕ трогаем — менеджер заполнит его сам при необходимости.
+            repeatModal.classList.remove('active');
+
+            setTimeout(() => {
+                if (missing.length > 0) {
+                    showToast(`Готово. Отсутствуют ${missing.length} образцов (подсвечены красным).`, 'warning');
+                    const first = document.querySelector('.item.highlight-missing');
+                    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    showToast('Чек-лист заполнен как в прошлый визит. Все образцы на месте.', 'success');
+                }
+            }, 150);
+            currentLastVisit = null;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && repeatModal.classList.contains('active')) {
+                repeatModal.classList.remove('active');
+                currentLastVisit = null;
+            }
+        });
+        // === КОНЕЦ ПОВТОРНОГО ВИЗИТА ===
+
+        // --- ОТПРАВКА ---
         submitBtn.addEventListener('click', async function() {
             const name = pointNameInput.value.trim();
             const address = pointAddressInput.value.trim();
@@ -1052,36 +1173,16 @@
             const manager = managerInput.value.trim();
             const comment = commentInput.value.trim();
 
-            // Проверка названия точки
-            if (!name) {
-                pointNameInput.classList.add('input-error');
-                showToast('Заполните название точки', 'error');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
-            // Проверка адреса
-            if (!address) {
-                pointAddressInput.classList.add('input-error');
-                showToast('Заполните адрес точки', 'error');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
-            // Проверка менеджера
-            if (!manager) {
-                managerInput.classList.add('input-error');
-                showToast('Заполните менеджера', 'error');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
+            if (!name) { pointNameInput.classList.add('input-error'); showToast('Заполните название точки', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+            if (!address) { pointAddressInput.classList.add('input-error'); showToast('Заполните адрес точки', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+            if (!manager) { managerInput.classList.add('input-error'); showToast('Заполните менеджера', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
 
-            // Сбор статусов – неотмеченные считаем как "Нет"
+            // Формат items оставляем как было: массив строк "Есть"/"Нет"
             const itemsStatus = [];
             document.querySelectorAll('.item').forEach(item => {
                 const selectedBtn = item.querySelector('.btn-group button.selected-yes, .btn-group button.selected-no');
                 let status = 'Нет';
-                if (selectedBtn) {
-                    status = selectedBtn.dataset.value === 'yes' ? 'Есть' : 'Нет';
-                }
+                if (selectedBtn) status = selectedBtn.dataset.value === 'yes' ? 'Есть' : 'Нет';
                 itemsStatus.push(status);
             });
 
@@ -1089,18 +1190,12 @@
             const stand2Count = parseInt(document.getElementById('stand2').value) || 0;
 
             const report = {
-                pointName: name,
-                pointAddress: address,
-                pointCity: city,
-                pointCoords: coords,
-                manager: manager,
-                comment: comment,
-                stand1: stand1Count,
-                stand2: stand2Count,
+                pointName: name, pointAddress: address, pointCity: city, pointCoords: coords,
+                manager: manager, comment: comment,
+                stand1: stand1Count, stand2: stand2Count,
                 items: itemsStatus,
                 type: isManual ? 'Новая' : 'База'
             };
-
             await addReportToQueue(report);
 
             let reportText = `Торговая точка: ${name}\nАдрес: ${address}\nГород: ${city || 'не указан'}\nКоординаты: ${coords || 'не указаны'}\nМенеджер: ${manager || 'не указан'}\nКомментарий: ${comment || '—'}\n\n`;
@@ -1112,43 +1207,29 @@
             });
             outputPre.textContent = reportText;
             resultDiv.style.display = 'block';
-
             showToast('Отчёт принят', 'success');
-
             resetForm();
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            if (navigator.onLine) {
-                await syncAllReports();
-            } else {
-                updateStatus('Отчёт сохранён в очереди (нет интернета)');
-            }
+            if (navigator.onLine) await syncAllReports();
+            else updateStatus('Отчёт сохранён в очереди (нет интернета)');
         });
 
         copyBtn.addEventListener('click', function() {
             const text = outputPre.textContent;
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showToast('Текст скопирован в буфер обмена!', 'success');
-                }).catch(() => fallbackCopy(text));
-            } else {
-                fallbackCopy(text);
-            }
+                navigator.clipboard.writeText(text).then(() => showToast('Текст скопирован!', 'success')).catch(() => fallbackCopy(text));
+            } else fallbackCopy(text);
         });
         function fallbackCopy(text) {
             const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
+            textarea.value = text; document.body.appendChild(textarea);
+            textarea.select(); document.execCommand('copy');
             document.body.removeChild(textarea);
-            showToast('Текст скопирован в буфер обмена!', 'success');
+            showToast('Текст скопирован!', 'success');
         }
 
-        syncBtn.addEventListener('click', function() {
-            syncAllReports();
-        });
+        syncBtn.addEventListener('click', function() { syncAllReports(); });
 
         window.addEventListener('online', function() {
             updateStatus('Интернет появился, синхронизация...');
@@ -1159,20 +1240,17 @@
         });
 
         updateQueueUI().then(() => {
-            if (navigator.onLine) {
-                getQueue().then(queue => {
-                    if (queue.length > 0) syncAllReports();
-                });
-            }
+            if (navigator.onLine) getQueue().then(queue => { if (queue.length > 0) syncAllReports(); });
         });
 
-        initPoints().then(() => {
-            console.log('База точек готова');
-        });
+        initPoints().then(() => { console.log('База точек готова'); });
+
+        // ПОВТОРНЫЙ ВИЗИТ: прогрев кеша визитов
+        getVisits().then(v => console.log(`Визитов в кеше: ${v.length}`));
     })();
 
     // =====================================================
-    // 8. МОДАЛЬНОЕ ОКНО ДЛЯ ИЗОБРАЖЕНИЙ
+    // 8. МОДАЛКА ИЗОБРАЖЕНИЙ
     // =====================================================
     function openImage(src) {
         document.getElementById('modalImage').src = src;
@@ -1192,7 +1270,7 @@
     });
 
     // =====================================================
-    // 9. РЕГИСТРАЦИЯ SERVICE WORKER
+    // 9. SERVICE WORKER
     // =====================================================
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
