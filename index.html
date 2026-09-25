@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
+    <meta name="app-version" content="1">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -26,7 +27,6 @@
         .suggest-item .name { font-weight: bold; }
         .suggest-item .addr { font-size: 12px; color: #666; }
         .suggest-item .coords { font-size: 11px; color: #aaa; margin-top: 2px; }
-        /* НОВОЕ: строка партнёра в подсказке */
         .suggest-item .partner { font-size: 12px; color: #2196F3; margin-top: 2px; font-weight: 600; }
         #suggest-list, #manager-suggest-list { background: white; border: 1px solid #ccc; max-height: 250px; overflow-y: auto; margin-top: 5px; display: none; }
         .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -128,7 +128,6 @@
     <label for="point_name">Название точки:</label>
     <input id="point_name" type="text" placeholder="Введите название..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5;" readonly>
 
-    <!-- НОВОЕ: Партнёр (скрыт по умолчанию) -->
     <div id="partner-block" style="display:none; margin-top:10px;">
         <label for="point_partner">Партнер:</label>
         <input id="point_partner" type="text" placeholder="Введите партнера..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
@@ -229,7 +228,7 @@
     // =====================================================
     // 1. НАСТРОЙКИ
     // =====================================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf0narXud7FfkPvgZ-fG-5aNaQN-Lea7KnKDqlYJFAI8wnICaa3tFX29Zzx7LQyOYo/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrDrZntyt4_by9gtoEoi9zLW5JUAMPzLzmuR0ZyuB_fIKhx_UXrLkZpVHWwOU_ATOa/exec';
     const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
     const STORAGE_KEY_POINTS = 'offline_points_cache';
     const STORAGE_KEY_QUEUE = 'offline_reports_queue';
@@ -319,7 +318,13 @@
             const data = localStorage.getItem(STORAGE_KEY_POINTS);
             if (data) {
                 const parsed = JSON.parse(data);
-                if (Array.isArray(parsed) && parsed.length) return parsed;
+                // Проверяем, что структура актуальна: у первой записи должно быть поле partner
+                // (даже пустое). Если поля нет — кеш устаревший, игнорируем его.
+                if (Array.isArray(parsed) && parsed.length && ('partner' in parsed[0])) {
+                    return parsed;
+                }
+                console.warn('Старый формат кеша — перезагружаем из сети');
+                localStorage.removeItem(STORAGE_KEY_POINTS);
             }
         } catch(e) {}
         return null;
@@ -378,7 +383,6 @@
         let addrIdx   = headers.findIndex(h => h.includes('адрес') || h.includes('address'));
         let cityIdx   = headers.findIndex(h => h.includes('город') || h.includes('city'));
         let coordIdx  = headers.findIndex(h => h.includes('координат') || h.includes('coord') || h.includes('lat'));
-        // НОВОЕ: колонка "Партнер" (может отсутствовать)
         let partnerIdx = headers.findIndex(h => h.includes('партн') || h.includes('partner'));
         if (nameIdx === -1) nameIdx = 0;
         if (addrIdx === -1) addrIdx = 1;
@@ -392,7 +396,6 @@
             const address = cols[addrIdx] || '';
             const city = cols[cityIdx] || '';
             const coordStr = cols[coordIdx] || '';
-            // НОВОЕ: партнёр (пустая строка, если колонки нет)
             const partner = (partnerIdx >= 0 && cols[partnerIdx]) ? cols[partnerIdx].trim() : '';
             let lat = NaN, lon = NaN;
             if (coordStr) {
@@ -409,7 +412,6 @@
                 }
             }
             if (name && address && !isNaN(lat) && !isNaN(lon)) {
-                // НОВОЕ: partner добавлен в объект
                 result.push({ name, address, city, lat, lon, partner });
             }
         }
@@ -418,7 +420,9 @@
 
     async function loadPointsFromNetwork() {
         try {
-            const response = await fetchWithTimeout(CSV_URL, {}, 15000);
+            // Cache-busting: добавляем ?v=timestamp, чтобы обойти кеш GitHub CDN и браузера
+            const url = CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + 'v=' + Date.now();
+            const response = await fetchWithTimeout(url, { cache: 'no-store' }, 15000);
             if (!response.ok) throw new Error('Network error');
             const csvText = await response.text();
             const parsed = parseCSV(csvText);
@@ -472,7 +476,6 @@
         if (fromCache) return;
         const fromNetwork = await loadPointsFromNetwork();
         if (fromNetwork) return;
-        // НОВОЕ: partner добавлен в резервные точки
         pointsData = [
             { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002, partner: '' },
             { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956, partner: '' }
@@ -656,6 +659,68 @@
     }
 
     // =====================================================
+    // 6b. ОБНОВЛЕНИЕ САМОГО ПРИЛОЖЕНИЯ (index.html)
+    // =====================================================
+    function getLocalAppVersion() {
+        const el = document.querySelector('meta[name="app-version"]');
+        return el ? el.content : null;
+    }
+
+    // Проверяем, есть ли что терять при перезагрузке
+    function hasUnsavedChanges() {
+        if (document.getElementById('manager').value.trim()) return true;
+        if (document.getElementById('comment').value.trim()) return true;
+        if (document.getElementById('point_name').value.trim()) return true;
+        const partnerEl = document.getElementById('point_partner');
+        if (partnerEl && partnerEl.value.trim()) return true;
+        if (document.querySelector('.btn-group button.selected-yes, .btn-group button.selected-no')) return true;
+        const s1 = parseInt(document.getElementById('stand1').value) || 0;
+        const s2 = parseInt(document.getElementById('stand2').value) || 0;
+        if (s1 > 0 || s2 > 0) return true;
+        return false;
+    }
+
+    // Тянет свежий HTML, сравнивает версию, при необходимости перезагружает.
+    // Возвращает: 'updated' | 'same' | 'skip' | 'error'
+    async function refreshAppIfNewer() {
+        try {
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const r of regs) {
+                    try { await r.update(); } catch(e) {}
+                }
+            }
+
+            const url = location.pathname + '?v=' + Date.now();
+            const resp = await fetch(url, { cache: 'no-store' });
+            if (!resp.ok) return 'error';
+            const html = await resp.text();
+
+            const m = html.match(/<meta\s+name=["']app-version["']\s+content=["']([^"']+)["']/i);
+            const serverVersion = m ? m[1] : null;
+            const localVersion  = getLocalAppVersion();
+
+            if (!serverVersion || !localVersion) return 'same';
+            if (serverVersion === localVersion) return 'same';
+
+            if (hasUnsavedChanges()) {
+                const ok = confirm(
+                    'Доступна новая версия чек-листа.\n' +
+                    'Обновить сейчас?\n\n' +
+                    'Внимание: несохранённые данные формы будут потеряны.'
+                );
+                if (!ok) return 'skip';
+            }
+
+            location.replace(url);
+            return 'updated';
+        } catch (e) {
+            console.warn('refreshAppIfNewer failed:', e);
+            return 'error';
+        }
+    }
+
+    // =====================================================
     // 7. ЛОГИКА ФОРМЫ
     // =====================================================
     (function() {
@@ -666,7 +731,6 @@
         const pointAddressInput = document.getElementById('point_address');
         const pointCityInput = document.getElementById('point_city');
         const pointCoordsInput = document.getElementById('point_coords');
-        // НОВОЕ: поле партнёра
         const pointPartnerInput = document.getElementById('point_partner');
         const partnerBlock = document.getElementById('partner-block');
         const pointFields = document.getElementById('point-fields');
@@ -736,7 +800,6 @@
             pointCityInput.style.background = '#fff';
             pointCoordsInput.style.background = '#fff';
 
-            // НОВОЕ: показываем поле партнёра для ручного ввода
             pointPartnerInput.value = '';
             pointPartnerInput.readOnly = false;
             pointPartnerInput.style.background = '#fff';
@@ -773,7 +836,7 @@
                 const name = item.name || '';
                 const addr = item.address || '';
                 const city = item.city || '';
-                const partner = item.partner || ''; // НОВОЕ
+                const partner = item.partner || '';
                 const coords = (item.lat && item.lon) ? `${item.lat}, ${item.lon}` : '';
                 html += `<div class="suggest-item" data-name="${name}" data-addr="${addr}" data-city="${city}" data-coords="${coords}" data-partner="${partner}">
                             <div class="name">${name}</div>
@@ -792,12 +855,10 @@
                     pointCityInput.value = this.dataset.city;
                     pointCoordsInput.value = this.dataset.coords;
 
-                    // НОВОЕ: подставляем партнёра из базы
                     const partner = this.dataset.partner || '';
                     pointPartnerInput.value = partner;
                     pointPartnerInput.readOnly = true;
                     pointPartnerInput.style.background = '#f5f5f5';
-                    // Показываем блок только если партнёр есть
                     partnerBlock.style.display = partner.trim() ? 'block' : 'none';
 
                     pointNameInput.readOnly = true; pointAddressInput.readOnly = true;
@@ -882,21 +943,45 @@
             });
         });
 
+        // --- ОБНОВЛЕНИЕ БАЗЫ + ОБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ---
         refreshPointsBtn.addEventListener('click', async function() {
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
+
             const results = await Promise.allSettled([
                 loadPointsFromNetwork(),
                 refreshVisitsCache()
             ]);
+
             const pointsOk = results[0].status === 'fulfilled' && results[0].value === true;
             const visitsOk = results[1].status === 'fulfilled' && results[1].value === true;
-            if (pointsOk && visitsOk) showToast('База точек и визитов обновлена!', 'success');
-            else if (pointsOk) showToast('Точки обновлены, визиты не удалось загрузить.', 'warning');
-            else if (visitsOk) showToast('Визиты обновлены, точки не удалось загрузить.', 'warning');
-            else showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
+
+            console.log('Обновление базы:', {
+                points: results[0].status, pointsOk,
+                visits: results[1].status, visitsOk,
+                visitsReason: results[1].reason ? String(results[1].reason) : null
+            });
+
+            if (pointsOk && visitsOk) {
+                showToast('База точек и визитов обновлена!', 'success');
+            } else if (pointsOk) {
+                showToast('Точки обновлены, визиты не удалось загрузить.', 'warning');
+            } else if (visitsOk) {
+                showToast('Визиты обновлены, точки не удалось загрузить.', 'warning');
+            } else {
+                showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
+            }
+
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
+
+            // Проверяем, не вышла ли новая версия самого чек-листа
+            const appStatus = await refreshAppIfNewer();
+            if (appStatus === 'updated') {
+                return; // страница перезагружается
+            } else if (appStatus === 'skip') {
+                showToast('Обновление отложено. Не забудьте сохранить отчёт.', 'info');
+            }
         });
 
         function resetForm() {
@@ -915,7 +1000,6 @@
             pointFields.style.display = 'none';
             pointNameInput.value = ''; pointAddressInput.value = '';
             pointCityInput.value = ''; pointCoordsInput.value = '';
-            // НОВОЕ: сброс партнёра
             pointPartnerInput.value = '';
             pointPartnerInput.readOnly = true;
             pointPartnerInput.style.background = '#f5f5f5';
@@ -1012,7 +1096,7 @@
             if (e.key === 'Escape') closeSearchPopup();
         });
 
-        // === ПОВТОРНЫЙ ВИЗИТ ===
+        // --- ПОВТОРНЫЙ ВИЗИТ ---
         const repeatBtn = document.getElementById('repeatVisitBtn');
         const repeatModal = document.getElementById('repeatModal');
         const repeatCountInp = document.getElementById('repeatCountInput');
@@ -1087,7 +1171,6 @@
             if (typeof currentLastVisit.stand1 === 'number') document.getElementById('stand1').value = currentLastVisit.stand1;
             if (typeof currentLastVisit.stand2 === 'number') document.getElementById('stand2').value = currentLastVisit.stand2;
 
-            // НОВОЕ: партнёр из прошлого визита (если он там был сохранён)
             if (currentLastVisit.partner) {
                 pointPartnerInput.value = currentLastVisit.partner;
                 partnerBlock.style.display = 'block';
@@ -1117,7 +1200,7 @@
         // --- ОТПРАВКА ---
         submitBtn.addEventListener('click', async function() {
             const name = pointNameInput.value.trim();
-            const partner = pointPartnerInput.value.trim();   // НОВОЕ
+            const partner = pointPartnerInput.value.trim();
             const address = pointAddressInput.value.trim();
             const city = pointCityInput.value.trim();
             const coords = pointCoordsInput.value.trim();
@@ -1159,14 +1242,13 @@
                 comment: comment,
                 stand1: stand1Count,
                 stand2: stand2Count,
-                items: itemsPayload,           // ← изменено с itemsStatus на itemsPayload
+                items: itemsPayload,
                 type: isManual ? 'Новая' : 'База'
             };
             await addReportToQueue(report);
 
-            // Текст для отображения/копирования — в порядке DOM (по формату)
             let reportText = `Торговая точка: ${name}\n`;
-            reportText += `Партнер: ${partner || '—'}\n`;   // НОВОЕ
+            reportText += `Партнер: ${partner || '—'}\n`;
             reportText += `Адрес: ${address}\n`;
             reportText += `Город: ${city || 'не указан'}\n`;
             reportText += `Координаты: ${coords || 'не указаны'}\n`;
@@ -1218,6 +1300,11 @@
 
         initPoints().then(() => { console.log('База точек готова'); });
         getVisits().then(v => console.log(`Визитов в кеше: ${v.length}`));
+
+        // Проверка новой версии при старте (тихо, без диалогов)
+        if (navigator.onLine) {
+            setTimeout(() => { refreshAppIfNewer().catch(() => {}); }, 3000);
+        }
     })();
 
     // =====================================================
