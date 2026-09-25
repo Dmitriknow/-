@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="2">
+    <meta name="app-version" content="1">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -62,6 +62,7 @@
         #sync-status { background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 5px solid #ffc107; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         #sync-status .badge { background: #dc3545; color: white; border-radius: 50px; padding: 2px 10px; font-weight: bold; }
         #sync-status .badge.online { background: #28a745; }
+        #app-version-badge { background: #6c757d; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; margin-left: 4px; }
         #sync-btn, #refreshPointsBtn { background: #007bff; color: white; border: none; padding: 6px 15px; border-radius: 5px; cursor: pointer; }
         #sync-btn:hover, #refreshPointsBtn:hover { background: #0069d9; }
         #sync-btn:disabled { opacity: 0.6; cursor: default; }
@@ -108,7 +109,7 @@
 <h2>Отчёт по торговой точке</h2>
 
 <div id="sync-status">
-    <span id="sync-message">📡 Статус: <span id="status-text">Ожидание</span></span>
+    <span id="sync-message">📡 Статус: <span id="status-text">Ожидание</span> <span id="app-version-badge">v?</span></span>
     <span>📦 Очередь: <span id="queue-count" class="badge">0</span></span>
     <span id="db-status">🗄️ База: загрузка...</span>
     <div>
@@ -228,7 +229,7 @@
     // =====================================================
     // 1. НАСТРОЙКИ
     // =====================================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf0narXud7FfkPvgZ-fG-5aNaQN-Lea7KnKDqlYJFAI8wnICaa3tFX29Zzx7LQyOYo/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrDrZntyt4_by9gtoEoi9zLW5JUAMPzLzmuR0ZyuB_fIKhx_UXrLkZpVHWwOU_ATOa/exec';
     const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
     const STORAGE_KEY_POINTS = 'offline_points_cache';
     const STORAGE_KEY_QUEUE = 'offline_reports_queue';
@@ -318,8 +319,6 @@
             const data = localStorage.getItem(STORAGE_KEY_POINTS);
             if (data) {
                 const parsed = JSON.parse(data);
-                // Проверяем, что структура актуальна: у первой записи должно быть поле partner
-                // (даже пустое). Если поля нет — кеш устаревший, игнорируем его.
                 if (Array.isArray(parsed) && parsed.length && ('partner' in parsed[0])) {
                     return parsed;
                 }
@@ -420,7 +419,6 @@
 
     async function loadPointsFromNetwork() {
         try {
-            // Cache-busting: добавляем ?v=timestamp, чтобы обойти кеш GitHub CDN и браузера
             const url = CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + 'v=' + Date.now();
             const response = await fetchWithTimeout(url, { cache: 'no-store' }, 15000);
             if (!response.ok) throw new Error('Network error');
@@ -666,7 +664,13 @@
         return el ? el.content : null;
     }
 
-    // Проверяем, есть ли что терять при перезагрузке
+    function renderAppVersionBadge() {
+        const badge = document.getElementById('app-version-badge');
+        if (!badge) return;
+        const v = getLocalAppVersion();
+        badge.textContent = v ? 'v' + v : 'v?';
+    }
+
     function hasUnsavedChanges() {
         if (document.getElementById('manager').value.trim()) return true;
         if (document.getElementById('comment').value.trim()) return true;
@@ -975,10 +979,9 @@
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
 
-            // Проверяем, не вышла ли новая версия самого чек-листа
             const appStatus = await refreshAppIfNewer();
             if (appStatus === 'updated') {
-                return; // страница перезагружается
+                return;
             } else if (appStatus === 'skip') {
                 showToast('Обновление отложено. Не забудьте сохранить отчёт.', 'info');
             }
@@ -1211,7 +1214,6 @@
             if (!address) { pointAddressInput.classList.add('input-error'); showToast('Заполните адрес точки', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
             if (!manager) { managerInput.classList.add('input-error'); showToast('Заполните менеджера', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
 
-            // Собираем статусы по имени артикула (независимо от порядка DOM)
             const statusByName = {};
             document.querySelectorAll('.item').forEach(item => {
                 const nameEl = item.querySelector('.item-name');
@@ -1222,8 +1224,6 @@
                 statusByName[nameEl.textContent.trim()] = status;
             });
 
-            // Шлём items как [{name, status}, ...] — скрипт матчит колонки по имени,
-            // а не по позиции. Никаких сдвигов при добавлении новых колонок.
             const itemsPayload = itemsRaw.map(it => ({
                 name: it.name,
                 status: statusByName[it.name] || 'Нет'
@@ -1300,6 +1300,7 @@
 
         initPoints().then(() => { console.log('База точек готова'); });
         getVisits().then(v => console.log(`Визитов в кеше: ${v.length}`));
+        renderAppVersionBadge();
 
         // Проверка новой версии при старте (тихо, без диалогов)
         if (navigator.onLine) {
