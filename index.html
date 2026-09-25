@@ -18,14 +18,16 @@
         .no { background: #f44336; color: white; }
         .selected-yes { background: #2E7D32; }
         .selected-no { background: #B71C1C; }
-        #point_name, #point_address, #point_city, #point_coords, #manager { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
-        #point_address, #point_city, #point_coords { background: #f5f5f5; border: 1px solid #ccc; }
+        #point_name, #point_address, #point_city, #point_coords, #point_partner, #manager { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+        #point_address, #point_city, #point_coords, #point_partner { background: #f5f5f5; border: 1px solid #ccc; }
         #point_coords { font-size: 14px; color: #555; }
         .suggest-item, .manager-suggest-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
         .suggest-item:hover, .manager-suggest-item:hover { background: #f0f0f0; }
         .suggest-item .name { font-weight: bold; }
         .suggest-item .addr { font-size: 12px; color: #666; }
         .suggest-item .coords { font-size: 11px; color: #aaa; margin-top: 2px; }
+        /* НОВОЕ: строка партнёра в подсказке */
+        .suggest-item .partner { font-size: 12px; color: #2196F3; margin-top: 2px; font-weight: 600; }
         #suggest-list, #manager-suggest-list { background: white; border: 1px solid #ccc; max-height: 250px; overflow-y: auto; margin-top: 5px; display: none; }
         .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .search-row input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; min-width: 150px; }
@@ -67,146 +69,34 @@
         #db-status.loaded { background: #d4edda; color: #155724; }
         #db-status.error { background: #f8d7da; color: #721c24; }
         #db-status.cached { background: #cce5ff; color: #004085; }
-        #itemSearchContainer {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 1001;
-            width: 90%;
-            max-width: 400px;
-            margin: 0;
-        }
-        #itemSearchContainer input {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #itemSuggestList {
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 0;
-            border-radius: 0 0 5px 5px;
-            display: none;
-        }
+        #itemSearchContainer { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1001; width: 90%; max-width: 400px; margin: 0; }
+        #itemSearchContainer input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        #itemSuggestList { background: white; border: 1px solid #ccc; border-top: none; max-height: 200px; overflow-y: auto; margin-top: 0; border-radius: 0 0 5px 5px; display: none; }
         .suggest-item .highlight-match { font-weight: bold; background: #ffeb3b; }
         .highlight-item { animation: highlightPulse 1s ease 3; }
         @keyframes highlightPulse { 0% { background: #fff9c4; } 50% { background: #ffeb3b; } 100% { background: #fff9c4; } }
         .input-error { border: 2px solid red !important; }
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10001;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            pointer-events: none;
-            width: 100%;
-            max-width: 500px;
-        }
-        .toast {
-            background: #333;
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            font-size: 16px;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            pointer-events: auto;
-            width: 100%;
-            text-align: center;
-        }
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10001; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: 100%; max-width: 500px; }
+        .toast { background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 16px; opacity: 0; transform: translateY(-20px); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: auto; width: 100%; text-align: center; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.success { background: #28a745; }
         .toast.info { background: #17a2b8; }
         .toast.warning { background: #ffc107; color: #333; }
         .toast.error { background: #dc3545; }
-
-        #searchToggle {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #FFEAA7;
-            color: #fff;
-            font-size: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            transition: transform 0.2s, background 0.2s;
-            user-select: none;
-            line-height: 1;
-        }
+        #searchToggle { position: fixed; bottom: 25px; right: 25px; width: 56px; height: 56px; border-radius: 50%; background: #FFEAA7; color: #fff; font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: transform 0.2s, background 0.2s; user-select: none; line-height: 1; }
         #searchToggle:hover { background: #0056b3; transform: scale(1.05); }
-        #searchOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            display: none;
-            cursor: default;
-        }
+        #searchOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; cursor: default; }
         .header-search-icon { display: none; }
-
-        /* === ПОВТОРНЫЙ ВИЗИТ: подсветка отсутствующих образцов === */
-        .item.highlight-missing {
-            border: 2px solid #ff5722;
-            background: #fff3e0;
-            box-shadow: 0 0 12px rgba(255,87,34,0.35);
-            animation: pulseMissing 1.6s ease-in-out infinite;
-        }
-        @keyframes pulseMissing {
-            0%,100% { box-shadow: 0 0 12px rgba(255,87,34,0.35); }
-            50%     { box-shadow: 0 0 22px rgba(255,87,34,0.65); }
-        }
-
-        /* === ПОВТОРНЫЙ ВИЗИТ: модальное окно === */
-        .repeat-modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.6); z-index: 10000;
-            justify-content: center; align-items: center;
-        }
+        .item.highlight-missing { border: 2px solid #ff5722; background: #fff3e0; box-shadow: 0 0 12px rgba(255,87,34,0.35); animation: pulseMissing 1.6s ease-in-out infinite; }
+        @keyframes pulseMissing { 0%,100% { box-shadow: 0 0 12px rgba(255,87,34,0.35); } 50% { box-shadow: 0 0 22px rgba(255,87,34,0.65); } }
+        .repeat-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; }
         .repeat-modal-overlay.active { display: flex; }
-        .repeat-modal-box {
-            background: #fff; padding: 24px; border-radius: 10px;
-            max-width: 420px; width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.35);
-        }
+        .repeat-modal-box { background: #fff; padding: 24px; border-radius: 10px; max-width: 420px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.35); }
         .repeat-modal-box h3 { margin: 0 0 10px; }
         .repeat-modal-box p { margin: 0 0 14px; color: #555; font-size: 14px; }
-        .repeat-modal-box input {
-            width: 100%; padding: 12px; font-size: 22px; text-align: center;
-            box-sizing: border-box; border: 2px solid #ddd; border-radius: 6px;
-        }
+        .repeat-modal-box input { width: 100%; padding: 12px; font-size: 22px; text-align: center; box-sizing: border-box; border: 2px solid #ddd; border-radius: 6px; }
         .repeat-modal-box .btn-row { display: flex; gap: 10px; margin-top: 16px; }
-        .repeat-modal-box .btn-row button {
-            flex: 1; padding: 12px; font-size: 16px; border: none;
-            border-radius: 6px; cursor: pointer;
-        }
+        .repeat-modal-box .btn-row button { flex: 1; padding: 12px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; }
         .repeat-ok { background: #4CAF50; color: #fff; }
         .repeat-ok:disabled { opacity: 0.5; cursor: default; }
         .repeat-cancel { background: #999; color: #fff; }
@@ -237,6 +127,13 @@
 <div id="point-fields">
     <label for="point_name">Название точки:</label>
     <input id="point_name" type="text" placeholder="Введите название..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5;" readonly>
+
+    <!-- НОВОЕ: Партнёр (скрыт по умолчанию) -->
+    <div id="partner-block" style="display:none; margin-top:10px;">
+        <label for="point_partner">Партнер:</label>
+        <input id="point_partner" type="text" placeholder="Введите партнера..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
+    </div>
+
     <label for="point_address">Адрес:</label>
     <input id="point_address" type="text" placeholder="Введите адрес..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5; border:1px solid #ccc;" readonly>
     <label for="point_city">Город:</label>
@@ -332,14 +229,12 @@
     // =====================================================
     // 1. НАСТРОЙКИ
     // =====================================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrDrZntyt4_by9gtoEoi9zLW5JUAMPzLzmuR0ZyuB_fIKhx_UXrLkZpVHWwOU_ATOa/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf0narXud7FfkPvgZ-fG-5aNaQN-Lea7KnKDqlYJFAI8wnICaa3tFX29Zzx7LQyOYo/exec';
     const CSV_URL = 'https://raw.githubusercontent.com/Dmitriknow/Points/refs/heads/main/all_cities_test.csv';
     const STORAGE_KEY_POINTS = 'offline_points_cache';
     const STORAGE_KEY_QUEUE = 'offline_reports_queue';
     const STORAGE_KEY_VISITS = 'offline_visits_cache';
 
-    // Универсальный fetch с таймаутом — чтобы «висячие» запросы
-    // не блокировали UI навсегда
     function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
         return new Promise((resolve, reject) => {
             const controller = new AbortController();
@@ -417,7 +312,7 @@
     ];
 
     // =====================================================
-    // 3. ХРАНИЛИЩЕ (localStorage)
+    // 3. ХРАНИЛИЩЕ
     // =====================================================
     function loadPointsFromStorage() {
         try {
@@ -445,8 +340,6 @@
     function saveQueueToStorage(queue) {
         try { localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(queue)); } catch(e) {}
     }
-
-    // === ПОВТОРНЫЙ ВИЗИТ: хранилище визитов ===
     function loadVisitsFromStorage() {
         try {
             const data = localStorage.getItem(STORAGE_KEY_VISITS);
@@ -481,10 +374,12 @@
         else if (headerLine.includes(';')) delimiter = ';';
         else if (headerLine.includes(',')) delimiter = ',';
         const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase());
-        let nameIdx = headers.findIndex(h => h.includes('название') || h.includes('name'));
-        let addrIdx = headers.findIndex(h => h.includes('адрес') || h.includes('address'));
-        let cityIdx = headers.findIndex(h => h.includes('город') || h.includes('city'));
-        let coordIdx = headers.findIndex(h => h.includes('координат') || h.includes('coord') || h.includes('lat'));
+        let nameIdx   = headers.findIndex(h => h.includes('название') || h.includes('name'));
+        let addrIdx   = headers.findIndex(h => h.includes('адрес') || h.includes('address'));
+        let cityIdx   = headers.findIndex(h => h.includes('город') || h.includes('city'));
+        let coordIdx  = headers.findIndex(h => h.includes('координат') || h.includes('coord') || h.includes('lat'));
+        // НОВОЕ: колонка "Партнер" (может отсутствовать)
+        let partnerIdx = headers.findIndex(h => h.includes('партн') || h.includes('partner'));
         if (nameIdx === -1) nameIdx = 0;
         if (addrIdx === -1) addrIdx = 1;
         if (cityIdx === -1) cityIdx = 2;
@@ -497,6 +392,8 @@
             const address = cols[addrIdx] || '';
             const city = cols[cityIdx] || '';
             const coordStr = cols[coordIdx] || '';
+            // НОВОЕ: партнёр (пустая строка, если колонки нет)
+            const partner = (partnerIdx >= 0 && cols[partnerIdx]) ? cols[partnerIdx].trim() : '';
             let lat = NaN, lon = NaN;
             if (coordStr) {
                 let parts = coordStr.split(',').map(s => s.trim());
@@ -512,7 +409,8 @@
                 }
             }
             if (name && address && !isNaN(lat) && !isNaN(lon)) {
-                result.push({ name, address, city, lat, lon });
+                // НОВОЕ: partner добавлен в объект
+                result.push({ name, address, city, lat, lon, partner });
             }
         }
         return result;
@@ -574,9 +472,10 @@
         if (fromCache) return;
         const fromNetwork = await loadPointsFromNetwork();
         if (fromNetwork) return;
+        // НОВОЕ: partner добавлен в резервные точки
         pointsData = [
-            { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002 },
-            { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956 }
+            { name: 'Леруа Мерлен Самара', address: 'Самара, Московское шоссе, 18 км, 27А', city: 'Самара', lat: 53.1959, lon: 50.1002, partner: '' },
+            { name: 'Леруа Мерлен Набережные Челны', address: 'Набережные Челны, пр. Мира, 87', city: 'Набережные Челны', lat: 55.7436, lon: 52.3956, partner: '' }
         ];
         dataLoaded = true;
         savePointsToStorage(pointsData);
@@ -604,7 +503,7 @@
     }
 
     // =====================================================
-    // 4b. ВИЗИТЫ (ДЛЯ ПОВТОРНОГО ВИЗИТА)
+    // 4b. ВИЗИТЫ
     // =====================================================
     async function loadVisitsFromNetwork() {
         try {
@@ -619,8 +518,6 @@
         }
     }
 
-    // Принудительно обновляет кеш визитов из сети.
-    // Кеш полностью очищается и перезаписывается заново — без «схлопывания».
     async function refreshVisitsCache() {
         const fresh = await loadVisitsFromNetwork();
         if (fresh && fresh.length) {
@@ -667,14 +564,13 @@
         });
         return matches[0];
     }
-    // items — объект { "артикул": "Есть"/"Нет" }
     function countSamples(visit) {
         if (!visit || !visit.items) return 0;
         return Object.values(visit.items).filter(s => s === 'Есть').length;
     }
 
     // =====================================================
-    // 5. ОЧЕРЕДЬ ОТЧЁТОВ
+    // 5. ОЧЕРЕДЬ
     // =====================================================
     async function getQueue() { return loadQueueFromStorage(); }
     async function saveQueue(queue) { saveQueueToStorage(queue); }
@@ -744,7 +640,7 @@
     }
 
     // =====================================================
-    // 6. TOAST-УВЕДОМЛЕНИЯ
+    // 6. TOAST
     // =====================================================
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
@@ -770,6 +666,9 @@
         const pointAddressInput = document.getElementById('point_address');
         const pointCityInput = document.getElementById('point_city');
         const pointCoordsInput = document.getElementById('point_coords');
+        // НОВОЕ: поле партнёра
+        const pointPartnerInput = document.getElementById('point_partner');
+        const partnerBlock = document.getElementById('partner-block');
         const pointFields = document.getElementById('point-fields');
         const managerInput = document.getElementById('manager');
         const managerSuggestList = document.getElementById('manager-suggest-list');
@@ -836,6 +735,13 @@
             pointAddressInput.style.background = '#fff';
             pointCityInput.style.background = '#fff';
             pointCoordsInput.style.background = '#fff';
+
+            // НОВОЕ: показываем поле партнёра для ручного ввода
+            pointPartnerInput.value = '';
+            pointPartnerInput.readOnly = false;
+            pointPartnerInput.style.background = '#fff';
+            partnerBlock.style.display = 'block';
+
             pointNameInput.focus();
             suggestList.style.display = 'none';
             searchInput.value = '';
@@ -867,11 +773,13 @@
                 const name = item.name || '';
                 const addr = item.address || '';
                 const city = item.city || '';
+                const partner = item.partner || ''; // НОВОЕ
                 const coords = (item.lat && item.lon) ? `${item.lat}, ${item.lon}` : '';
-                html += `<div class="suggest-item" data-name="${name}" data-addr="${addr}" data-city="${city}" data-coords="${coords}">
+                html += `<div class="suggest-item" data-name="${name}" data-addr="${addr}" data-city="${city}" data-coords="${coords}" data-partner="${partner}">
                             <div class="name">${name}</div>
                             <div class="addr">${addr}${city ? ' (' + city + ')' : ''}</div>
                             ${coords ? `<div class="coords">${coords}</div>` : ''}
+                            ${partner ? `<div class="partner">Партнер: ${partner}</div>` : ''}
                         </div>`;
             });
             suggestList.innerHTML = html;
@@ -883,6 +791,15 @@
                     pointAddressInput.value = this.dataset.addr;
                     pointCityInput.value = this.dataset.city;
                     pointCoordsInput.value = this.dataset.coords;
+
+                    // НОВОЕ: подставляем партнёра из базы
+                    const partner = this.dataset.partner || '';
+                    pointPartnerInput.value = partner;
+                    pointPartnerInput.readOnly = true;
+                    pointPartnerInput.style.background = '#f5f5f5';
+                    // Показываем блок только если партнёр есть
+                    partnerBlock.style.display = partner.trim() ? 'block' : 'none';
+
                     pointNameInput.readOnly = true; pointAddressInput.readOnly = true;
                     pointCityInput.readOnly = true; pointCoordsInput.readOnly = true;
                     pointAddressInput.style.background = '#f5f5f5';
@@ -965,36 +882,19 @@
             });
         });
 
-        // === ОБНОВЛЕНИЕ БАЗЫ: точки + визиты ===
         refreshPointsBtn.addEventListener('click', async function() {
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
-
-            // allSettled — не падает целиком, если один из запросов не удался
             const results = await Promise.allSettled([
                 loadPointsFromNetwork(),
                 refreshVisitsCache()
             ]);
-
             const pointsOk = results[0].status === 'fulfilled' && results[0].value === true;
             const visitsOk = results[1].status === 'fulfilled' && results[1].value === true;
-
-            console.log('Обновление базы:', {
-                points: results[0].status, pointsOk,
-                visits: results[1].status, visitsOk,
-                visitsReason: results[1].reason ? String(results[1].reason) : null
-            });
-
-            if (pointsOk && visitsOk) {
-                showToast('База точек и визитов обновлена!', 'success');
-            } else if (pointsOk) {
-                showToast('Точки обновлены, визиты не удалось загрузить.', 'warning');
-            } else if (visitsOk) {
-                showToast('Визиты обновлены, точки не удалось загрузить.', 'warning');
-            } else {
-                showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
-            }
-
+            if (pointsOk && visitsOk) showToast('База точек и визитов обновлена!', 'success');
+            else if (pointsOk) showToast('Точки обновлены, визиты не удалось загрузить.', 'warning');
+            else if (visitsOk) showToast('Визиты обновлены, точки не удалось загрузить.', 'warning');
+            else showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
             this.textContent = '🔄 Обновить базу';
             this.disabled = false;
         });
@@ -1004,7 +904,6 @@
                 btn.classList.remove('selected-yes', 'selected-no');
             });
             document.querySelectorAll('.item.highlight-missing').forEach(el => el.classList.remove('highlight-missing'));
-
             document.getElementById('stand1').value = 0;
             document.getElementById('stand2').value = 0;
             commentInput.value = '';
@@ -1016,6 +915,12 @@
             pointFields.style.display = 'none';
             pointNameInput.value = ''; pointAddressInput.value = '';
             pointCityInput.value = ''; pointCoordsInput.value = '';
+            // НОВОЕ: сброс партнёра
+            pointPartnerInput.value = '';
+            pointPartnerInput.readOnly = true;
+            pointPartnerInput.style.background = '#f5f5f5';
+            partnerBlock.style.display = 'none';
+
             pointNameInput.readOnly = true; pointAddressInput.readOnly = true;
             pointCityInput.readOnly = true; pointCoordsInput.readOnly = true;
             pointAddressInput.style.background = '#f5f5f5';
@@ -1028,7 +933,7 @@
             searchInput.blur();
         }
 
-        // --- ПОИСК АРТИКУЛОВ (попап) ---
+        // --- ПОИСК АРТИКУЛОВ ---
         const searchToggle = document.getElementById('searchToggle');
         const searchContainer = document.getElementById('itemSearchContainer');
         const searchOverlay = document.getElementById('searchOverlay');
@@ -1107,9 +1012,7 @@
             if (e.key === 'Escape') closeSearchPopup();
         });
 
-        // =====================================================
-        // === ПОВТОРНЫЙ ВИЗИТ: логика ===
-        // =====================================================
+        // === ПОВТОРНЫЙ ВИЗИТ ===
         const repeatBtn = document.getElementById('repeatVisitBtn');
         const repeatModal = document.getElementById('repeatModal');
         const repeatCountInp = document.getElementById('repeatCountInput');
@@ -1136,8 +1039,6 @@
             if (!currentLastVisit) {
                 repeatInfo.textContent = '❌ Прошлых визитов по этой точке нет — заполните чек-лист вручную.';
             } else {
-                // Подсказку с количеством образцов НЕ показываем —
-                // менеджер должен сам пересчитать образцы на выставке.
                 repeatInfo.textContent = '';
                 repeatOkBtn.disabled = false;
                 setTimeout(() => repeatCountInp.focus(), 100);
@@ -1186,7 +1087,12 @@
             if (typeof currentLastVisit.stand1 === 'number') document.getElementById('stand1').value = currentLastVisit.stand1;
             if (typeof currentLastVisit.stand2 === 'number') document.getElementById('stand2').value = currentLastVisit.stand2;
 
-            // Комментарий НЕ трогаем — менеджер заполнит его сам при необходимости.
+            // НОВОЕ: партнёр из прошлого визита (если он там был сохранён)
+            if (currentLastVisit.partner) {
+                pointPartnerInput.value = currentLastVisit.partner;
+                partnerBlock.style.display = 'block';
+            }
+
             repeatModal.classList.remove('active');
 
             setTimeout(() => {
@@ -1207,11 +1113,11 @@
                 currentLastVisit = null;
             }
         });
-        // === КОНЕЦ ПОВТОРНОГО ВИЗИТА ===
 
         // --- ОТПРАВКА ---
         submitBtn.addEventListener('click', async function() {
             const name = pointNameInput.value.trim();
+            const partner = pointPartnerInput.value.trim();   // НОВОЕ
             const address = pointAddressInput.value.trim();
             const city = pointCityInput.value.trim();
             const coords = pointCoordsInput.value.trim();
@@ -1222,33 +1128,55 @@
             if (!address) { pointAddressInput.classList.add('input-error'); showToast('Заполните адрес точки', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
             if (!manager) { managerInput.classList.add('input-error'); showToast('Заполните менеджера', 'error'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
 
-            // Формат items оставляем как было: массив строк "Есть"/"Нет"
-            const itemsStatus = [];
+            // Собираем статусы по имени артикула (независимо от порядка DOM)
+            const statusByName = {};
             document.querySelectorAll('.item').forEach(item => {
+                const nameEl = item.querySelector('.item-name');
+                if (!nameEl) return;
                 const selectedBtn = item.querySelector('.btn-group button.selected-yes, .btn-group button.selected-no');
                 let status = 'Нет';
                 if (selectedBtn) status = selectedBtn.dataset.value === 'yes' ? 'Есть' : 'Нет';
-                itemsStatus.push(status);
+                statusByName[nameEl.textContent.trim()] = status;
             });
+
+            // Шлём items как [{name, status}, ...] — скрипт матчит колонки по имени,
+            // а не по позиции. Никаких сдвигов при добавлении новых колонок.
+            const itemsPayload = itemsRaw.map(it => ({
+                name: it.name,
+                status: statusByName[it.name] || 'Нет'
+            }));
 
             const stand1Count = parseInt(document.getElementById('stand1').value) || 0;
             const stand2Count = parseInt(document.getElementById('stand2').value) || 0;
 
             const report = {
-                pointName: name, pointAddress: address, pointCity: city, pointCoords: coords,
-                manager: manager, comment: comment,
-                stand1: stand1Count, stand2: stand2Count,
-                items: itemsStatus,
+                pointName: name,
+                partner: partner,
+                pointAddress: address,
+                pointCity: city,
+                pointCoords: coords,
+                manager: manager,
+                comment: comment,
+                stand1: stand1Count,
+                stand2: stand2Count,
+                items: itemsPayload,           // ← изменено с itemsStatus на itemsPayload
                 type: isManual ? 'Новая' : 'База'
             };
             await addReportToQueue(report);
 
-            let reportText = `Торговая точка: ${name}\nАдрес: ${address}\nГород: ${city || 'не указан'}\nКоординаты: ${coords || 'не указаны'}\nМенеджер: ${manager || 'не указан'}\nКомментарий: ${comment || '—'}\n\n`;
+            // Текст для отображения/копирования — в порядке DOM (по формату)
+            let reportText = `Торговая точка: ${name}\n`;
+            reportText += `Партнер: ${partner || '—'}\n`;   // НОВОЕ
+            reportText += `Адрес: ${address}\n`;
+            reportText += `Город: ${city || 'не указан'}\n`;
+            reportText += `Координаты: ${coords || 'не указаны'}\n`;
+            reportText += `Менеджер: ${manager || 'не указан'}\n`;
+            reportText += `Комментарий: ${comment || '—'}\n\n`;
             reportText += `Стенд «гребенка»: ${stand1Count} шт.\n`;
             reportText += `Стенд «Выкатной»: ${stand2Count} шт.\n\n`;
-            document.querySelectorAll('.item').forEach((item, index) => {
+            document.querySelectorAll('.item').forEach(item => {
                 const itemName = item.querySelector('.item-name').textContent;
-                reportText += `${itemName} → ${itemsStatus[index]}\n`;
+                reportText += `${itemName} → ${statusByName[itemName] || 'Нет'}\n`;
             });
             outputPre.textContent = reportText;
             resultDiv.style.display = 'block';
@@ -1289,8 +1217,6 @@
         });
 
         initPoints().then(() => { console.log('База точек готова'); });
-
-        // ПОВТОРНЫЙ ВИЗИТ: прогрев кеша визитов
         getVisits().then(v => console.log(`Визитов в кеше: ${v.length}`));
     })();
 
