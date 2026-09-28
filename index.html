@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="4">
+    <meta name="app-version" content="5">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -497,7 +497,8 @@
             const name = (p.name || '').toLowerCase();
             const addr = (p.address || '').toLowerCase();
             const city = (p.city || '').toLowerCase();
-            if (name.includes(q) || addr.includes(q) || city.includes(q)) results.push(p);
+            const partner = (p.partner || '').toLowerCase();
+            if (name.includes(q) || addr.includes(q) || city.includes(q) || partner.includes(q)) results.push(p);
             if (results.length >= 50) break;
         }
         return results;
