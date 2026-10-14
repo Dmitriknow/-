@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="5">
+    <meta name="app-version" content="7">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -102,6 +102,106 @@
         .repeat-ok:disabled { opacity: 0.5; cursor: default; }
         .repeat-cancel { background: #999; color: #fff; }
         #repeatVisitInfo { font-size: 13px; color: #666; margin-top: 8px; min-height: 18px; }
+
+        /* ==== Мониторинг конкурентов ==== */
+        #monitoringBtn {
+            padding: 12px 20px;
+            background: #673AB7;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #monitoringBtn:hover { background: #5E35B1; }
+        #monitoringBtn:disabled {
+            background: #b0a5c9;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #monitoringBtn:disabled:hover { background: #b0a5c9; }
+
+        #monitoring-queue-badge {
+            background: #dc3545;
+            color: #fff;
+            border-radius: 50px;
+            padding: 2px 12px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-left: 6px;
+            min-width: 22px;
+            text-align: center;
+            display: inline-block;
+        }
+        #monitoring-queue-badge.online { background: #28a745; }
+
+        .monitoring-modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 10000;
+            justify-content: center; align-items: center;
+        }
+        .monitoring-modal-overlay.active { display: flex; }
+
+        .monitoring-modal-box {
+            background: #fff;
+            padding: 24px;
+            border-radius: 10px;
+            max-width: 460px;
+            width: 92%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+        }
+        .monitoring-modal-box h3 { margin: 0 0 6px; }
+        .monitoring-modal-box .mon-hint { font-size: 13px; color: #666; margin: 0 0 10px; }
+        .monitoring-modal-box label {
+            display: block; margin-top: 12px; margin-bottom: 5px;
+            font-weight: 600; font-size: 14px;
+        }
+        .monitoring-modal-box input,
+        .monitoring-modal-box textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+        }
+        .monitoring-btn-row { display: flex; gap: 10px; margin-top: 18px; }
+        .monitoring-btn-row button {
+            flex: 1; padding: 12px; font-size: 16px;
+            border: none; border-radius: 6px; cursor: pointer;
+        }
+        .mon-ok { background: #4CAF50; color: #fff; }
+        .mon-ok:hover { background: #388E3C; }
+        .mon-cancel { background: #999; color: #fff; }
+        .mon-cancel:hover { background: #777; }
+
+        .monitoring-session-list { margin-top: 15px; }
+        .monitoring-session-item {
+            background: #f1f8e9;
+            border-left: 4px solid #4CAF50;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .mon-context-info {
+            font-size: 12px;
+            color: #555;
+            background: #f5f5f5;
+            border-left: 3px solid #673AB7;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .mon-context-info b { color: #333; }
     </style>
 </head>
 <body>
@@ -145,6 +245,11 @@
 <label for="manager">Менеджер:</label>
 <input id="manager" type="text" placeholder="Введите фамилию..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; border:1px solid #ccc; border-radius:5px;">
 <div id="manager-suggest-list" class="suggest-list"></div>
+
+<div style="display: flex; align-items: center; gap: 8px; margin: 15px 0 10px; flex-wrap: wrap;">
+    <button id="monitoringBtn" disabled title="Сначала выберите точку (название + адрес) и укажите менеджера">📊 Мониторинг конкурентов</button>
+    <span id="monitoring-queue-badge">0</span>
+</div>
 
 <hr>
 <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
@@ -218,6 +323,31 @@
             <button class="repeat-ok" id="repeatOkBtn">Проверить и заполнить</button>
             <button class="repeat-cancel" id="repeatCancelBtn">Отмена</button>
         </div>
+    </div>
+</div>
+
+<div class="monitoring-modal-overlay" id="monitoringModal">
+    <div class="monitoring-modal-box">
+        <h3>📊 Мониторинг конкурентов</h3>
+        <p class="mon-hint">Заполните данные о конкурентах в текущей точке. Записи уходят в отдельную таблицу и не влияют на чек-лист.</p>
+
+        <div class="mon-context-info" id="monContextInfo"></div>
+
+        <label for="competitorName">Конкурент:</label>
+        <input type="text" id="competitorName" placeholder="Название конкурента">
+
+        <label for="competitorStands">Кол-во стендов:</label>
+        <input type="number" id="competitorStands" min="0" step="1" placeholder="0">
+
+        <label for="competitorComment">Комментарий (необязательно):</label>
+        <textarea id="competitorComment" rows="2" placeholder="..."></textarea>
+
+        <div class="monitoring-btn-row">
+            <button id="monitoringAddBtn" class="mon-ok">Добавить</button>
+            <button id="monitoringCancelBtn" class="mon-cancel">Закрыть</button>
+        </div>
+
+        <div class="monitoring-session-list" id="monitoringSessionList"></div>
     </div>
 </div>
 
@@ -685,8 +815,6 @@
         return false;
     }
 
-    // Тянет свежий HTML, сравнивает версию, при необходимости перезагружает.
-    // Возвращает: 'updated' | 'same' | 'skip' | 'error'
     async function refreshAppIfNewer() {
         try {
             if ('serviceWorker' in navigator) {
@@ -775,14 +903,16 @@
                     managerInput.value = this.dataset.name;
                     managerSuggestList.style.display = 'none';
                     managerInput.classList.remove('input-error');
+                    if (window.updateMonBtnState) window.updateMonBtnState();
                 });
             });
         }
         managerInput.addEventListener('input', function() {
             const query = this.value.trim();
-            if (query.length === 0) { renderManagerSuggestions(managers); return; }
-            renderManagerSuggestions(filterManagers(query));
+            if (query.length === 0) { renderManagerSuggestions(managers); }
+            else { renderManagerSuggestions(filterManagers(query)); }
             this.classList.remove('input-error');
+            if (window.updateMonBtnState) window.updateMonBtnState();
         });
         managerInput.addEventListener('focus', function() {
             if (this.value.trim() === '') renderManagerSuggestions(managers);
@@ -817,6 +947,7 @@
             pointNameInput.classList.remove('input-error');
             pointAddressInput.classList.remove('input-error');
             managerInput.classList.remove('input-error');
+            if (window.updateMonBtnState) window.updateMonBtnState();
         });
 
         let searchTimer;
@@ -877,6 +1008,7 @@
                     pointNameInput.classList.remove('input-error');
                     pointAddressInput.classList.remove('input-error');
                     managerInput.classList.remove('input-error');
+                    if (window.updateMonBtnState) window.updateMonBtnState();
                 });
             });
         }
@@ -948,7 +1080,6 @@
             });
         });
 
-        // --- ОБНОВЛЕНИЕ БАЗЫ + ОБНОВЛЕНИЕ ПРИЛОЖЕНИЯ ---
         refreshPointsBtn.addEventListener('click', async function() {
             this.disabled = true;
             this.textContent = '⏳ Загрузка...';
@@ -1019,9 +1150,9 @@
             isManual = false;
             closeSearchPopup();
             searchInput.blur();
+            if (window.updateMonBtnState) window.updateMonBtnState();
         }
 
-        // --- ПОИСК АРТИКУЛОВ ---
         const searchToggle = document.getElementById('searchToggle');
         const searchContainer = document.getElementById('itemSearchContainer');
         const searchOverlay = document.getElementById('searchOverlay');
@@ -1100,7 +1231,6 @@
             if (e.key === 'Escape') closeSearchPopup();
         });
 
-        // --- ПОВТОРНЫЙ ВИЗИТ ---
         const repeatBtn = document.getElementById('repeatVisitBtn');
         const repeatModal = document.getElementById('repeatModal');
         const repeatCountInp = document.getElementById('repeatCountInput');
@@ -1201,7 +1331,6 @@
             }
         });
 
-        // --- ОТПРАВКА ---
         submitBtn.addEventListener('click', async function() {
             const name = pointNameInput.value.trim();
             const partner = pointPartnerInput.value.trim();
@@ -1303,7 +1432,6 @@
         getVisits().then(v => console.log(`Визитов в кеше: ${v.length}`));
         renderAppVersionBadge();
 
-        // Проверка новой версии при старте (тихо, без диалогов)
         if (navigator.onLine) {
             setTimeout(() => { refreshAppIfNewer().catch(() => {}); }, 3000);
         }
@@ -1337,6 +1465,272 @@
             .then(reg => console.log('SW registered'))
             .catch(err => console.log('SW registration failed', err));
     }
+
+    // =====================================================
+    // 10. МОНИТОРИНГ КОНКУРЕНТОВ (независимый модуль)
+    // =====================================================
+    (function() {
+        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2StQXmcjms1I7Ma9toQTmGDuKjd5SuDgfp8BQBL9qB-mqGm-P_EVncxchM-ijay6y/exec';
+        const STORAGE_KEY_MON_QUEUE = 'offline_monitoring_queue';
+        const URL_READY = !MONITORING_SCRIPT_URL.includes('PASTE_YOUR');
+
+        // --- Управление активностью кнопки мониторинга ---
+        window.updateMonBtnState = function() {
+            const btn = document.getElementById('monitoringBtn');
+            if (!btn) return;
+            const name = (document.getElementById('point_name')?.value || '').trim();
+            const addr = (document.getElementById('point_address')?.value || '').trim();
+            const mgr  = (document.getElementById('manager')?.value || '').trim();
+            const ready = !!(name && addr && mgr);
+            btn.disabled = !ready;
+            btn.title = ready
+                ? 'Открыть мониторинг конкурентов'
+                : 'Сначала выберите точку (название + адрес) и укажите менеджера';
+        };
+
+        const _mgrEl = document.getElementById('manager');
+        if (_mgrEl) {
+            _mgrEl.addEventListener('input',  window.updateMonBtnState);
+            _mgrEl.addEventListener('change', window.updateMonBtnState);
+            _mgrEl.addEventListener('blur',   window.updateMonBtnState);
+        }
+
+        function loadMonQueue() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY_MON_QUEUE);
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return [];
+        }
+        function saveMonQueue(q) {
+            try { localStorage.setItem(STORAGE_KEY_MON_QUEUE, JSON.stringify(q)); } catch (e) {}
+        }
+
+        function buildMonUrl(report) {
+            const params = new URLSearchParams({
+                type: 'monitoring',
+                competitor: report.competitor || '',
+                standsCount: String(report.standsCount ?? 0),
+                comment: report.comment || '',
+                pointName: report.pointName || '',
+                pointAddress: report.pointAddress || '',
+                manager: report.manager || '',
+                id: report.id || '',
+                timestamp: report.timestamp || new Date().toISOString()
+            });
+            return MONITORING_SCRIPT_URL + '?' + params.toString();
+        }
+
+        async function addMonReport(report) {
+            const q = loadMonQueue();
+            q.push({
+                ...report,
+                id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                timestamp: new Date().toISOString()
+            });
+            saveMonQueue(q);
+            updateMonBadge();
+            return q.length;
+        }
+
+        async function sendMonReport(report) {
+            try {
+                const url = buildMonUrl(report);
+                const resp = await fetch(url, { method: 'GET', cache: 'no-store' });
+                if (!resp.ok) {
+                    console.error('Monitoring HTTP error:', resp.status, url);
+                    return false;
+                }
+                const text = await resp.text();
+                console.log('Monitoring server response:', text);
+                if (text && /error|exception|not found|unauthor/i.test(text)) return false;
+                return true;
+            } catch (e) {
+                console.error('Ошибка отправки мониторинга:', e);
+                return false;
+            }
+        }
+
+        async function syncMonReports() {
+            const q = loadMonQueue();
+            if (q.length === 0) { updateMonBadge(); return; }
+            if (!navigator.onLine) { updateMonBadge(); return; }
+
+            if (!URL_READY) {
+                showToast('Мониторинг: не задан URL скрипта', 'error');
+                return;
+            }
+
+            const failedIds = [];
+            let ok = 0;
+            for (const r of q) {
+                const sent = await sendMonReport(r);
+                if (sent) ok++;
+                else failedIds.push(r.id);
+            }
+            if (ok > 0) {
+                const remaining = loadMonQueue().filter(r => failedIds.includes(r.id));
+                saveMonQueue(remaining);
+            }
+            updateMonBadge();
+            if (ok > 0) showToast(`Мониторинг: отправлено записей — ${ok}`, 'success');
+            else if (failedIds.length > 0) showToast('Мониторинг: сервер не принял записи, оставлены в очереди', 'error');
+        }
+
+        function updateMonBadge() {
+            const badge = document.getElementById('monitoring-queue-badge');
+            if (!badge) return;
+            const count = loadMonQueue().length;
+            badge.textContent = count;
+            badge.className = (count === 0) ? 'online' : '';
+        }
+
+        const monBtn       = document.getElementById('monitoringBtn');
+        const monModal     = document.getElementById('monitoringModal');
+        const monName      = document.getElementById('competitorName');
+        const monStands    = document.getElementById('competitorStands');
+        const monComment   = document.getElementById('competitorComment');
+        const monAddBtn    = document.getElementById('monitoringAddBtn');
+        const monCancelBtn = document.getElementById('monitoringCancelBtn');
+        const monSessionList = document.getElementById('monitoringSessionList');
+        const monContextInfo = document.getElementById('monContextInfo');
+
+        let sessionEntries = [];
+
+        function renderContextInfo() {
+            if (!monContextInfo) return;
+            const name = (document.getElementById('point_name')?.value || '').trim();
+            const addr = (document.getElementById('point_address')?.value || '').trim();
+            const mgr  = (document.getElementById('manager')?.value || '').trim();
+            monContextInfo.innerHTML =
+                `<div>🏬 Точка: <b>${escapeHtml(name || '—')}</b></div>` +
+                `<div>📍 Адрес: <b>${escapeHtml(addr || '—')}</b></div>` +
+                `<div>👤 Менеджер: <b>${escapeHtml(mgr || '—')}</b></div>`;
+        }
+
+        function openMonModal() {
+            renderContextInfo();
+            monModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => monName.focus(), 100);
+        }
+        function closeMonModal() {
+            monModal.classList.remove('active');
+            document.body.style.overflow = '';
+            monName.value = '';
+            monStands.value = '';
+            monComment.value = '';
+            monName.classList.remove('input-error');
+            monStands.classList.remove('input-error');
+            sessionEntries = [];
+            renderSessionList();
+        }
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+            }[c]));
+        }
+        function renderSessionList() {
+            if (sessionEntries.length === 0) { monSessionList.innerHTML = ''; return; }
+            let html = '<div style="font-size:13px;color:#666;margin-bottom:6px;">Добавлено в этой сессии:</div>';
+            sessionEntries.forEach(e => {
+                html += `<div class="monitoring-session-item">
+                    <b>${escapeHtml(e.competitor)}</b> — стендов: ${e.standsCount}
+                    ${e.comment ? '<br><span style="color:#666">' + escapeHtml(e.comment) + '</span>' : ''}
+                </div>`;
+            });
+            monSessionList.innerHTML = html;
+        }
+
+        monBtn.addEventListener('click', () => {
+            if (monBtn.disabled) return;
+            openMonModal();
+        });
+        monCancelBtn.addEventListener('click', closeMonModal);
+        monModal.addEventListener('click', e => { if (e.target === monModal) closeMonModal(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && monModal.classList.contains('active')) closeMonModal();
+        });
+
+        monAddBtn.addEventListener('click', async () => {
+            const comp    = monName.value.trim();
+            const stands  = parseInt(monStands.value, 10);
+            const comment = monComment.value.trim();
+
+            if (!comp) {
+                monName.classList.add('input-error');
+                showToast('Укажите конкурента', 'error');
+                monName.focus();
+                return;
+            }
+            if (isNaN(stands) || stands < 0) {
+                monStands.classList.add('input-error');
+                showToast('Укажите корректное количество стендов', 'error');
+                monStands.focus();
+                return;
+            }
+
+            const pointName    = (document.getElementById('point_name')?.value || '').trim();
+            const pointAddress = (document.getElementById('point_address')?.value || '').trim();
+            const manager      = (document.getElementById('manager')?.value || '').trim();
+
+            const report = {
+                type: 'monitoring',
+                competitor: comp,
+                standsCount: stands,
+                comment: comment,
+                pointName: pointName,
+                pointAddress: pointAddress,
+                manager: manager
+            };
+
+            await addMonReport(report);
+            sessionEntries.push(report);
+            renderSessionList();
+
+            monName.value = '';
+            monStands.value = '';
+            monComment.value = '';
+            monName.classList.remove('input-error');
+            monStands.classList.remove('input-error');
+            monName.focus();
+
+            showToast('Запись добавлена в очередь', 'success');
+
+            if (navigator.onLine) syncMonReports();
+        });
+
+        window.addEventListener('online', () => { syncMonReports(); });
+
+        window.monitoringTest = async function() {
+            const test = {
+                competitor: 'ТЕСТ',
+                standsCount: 1,
+                comment: 'Тест ' + new Date().toISOString(),
+                pointName: 'ТЕСТ-точка',
+                pointAddress: 'ТЕСТ-адрес',
+                manager: 'ТЕСТ'
+            };
+            const url = buildMonUrl(test);
+            console.log('GET URL:', url);
+            try {
+                const r = await fetch(url, { method: 'GET', cache: 'no-store' });
+                const t = await r.text();
+                console.log('Status:', r.status, 'Response:', t);
+                return { status: r.status, body: t };
+            } catch (e) {
+                console.error(e);
+                return e;
+            }
+        };
+
+        updateMonBadge();
+        window.updateMonBtnState();
+        if (navigator.onLine) syncMonReports();
+    })();
 </script>
 </body>
 </html>
