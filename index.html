@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="8">
+    <meta name="app-version" content="10">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -202,8 +202,17 @@
             margin-top: 10px;
         }
         .mon-context-info b { color: #333; }
+        .mon-point-type-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+        .mon-point-type-badge.base { background: #cce5ff; color: #004085; }
+        .mon-point-type-badge.new  { background: #fff3cd; color: #856404; }
 
-        /* Подсказки по конкурентам */
         .competitor-suggest-list {
             background: #fff;
             border: 1px solid #ccc;
@@ -236,7 +245,6 @@
             white-space: nowrap;
         }
 
-        /* Блок «ранее находили в этой точке» */
         .mon-prev-block {
             margin-top: 12px;
             padding: 10px;
@@ -284,6 +292,7 @@
 <div id="suggest-list" class="suggest-list"></div>
 
 <div id="point-fields">
+    <input type="hidden" id="point_type" value="База">
     <label for="point_name">Название точки:</label>
     <input id="point_name" type="text" placeholder="Введите название..." style="width:100%; padding:10px; font-size:16px; box-sizing:border-box; background:#f5f5f5;" readonly>
 
@@ -558,6 +567,15 @@
     let pointsData = [];
     let dataLoaded = false;
     let isManual = false;
+
+    function getPointType() {
+        const el = document.getElementById('point_type');
+        return el ? (el.value || 'База') : 'База';
+    }
+    function setPointType(v) {
+        const el = document.getElementById('point_type');
+        if (el) el.value = v;
+    }
 
     function parseCSV(csvText) {
         csvText = csvText.replace(/^\uFEFF/, '');
@@ -988,6 +1006,7 @@
 
         newPointBtn.addEventListener('click', function() {
             isManual = true;
+            setPointType('Новая');
             pointNameInput.value = ''; pointAddressInput.value = '';
             pointCityInput.value = ''; pointCoordsInput.value = '';
             pointNameInput.readOnly = false; pointAddressInput.readOnly = false;
@@ -1047,6 +1066,7 @@
             suggestList.querySelectorAll('.suggest-item').forEach(el => {
                 el.addEventListener('click', function() {
                     isManual = false;
+                    setPointType('База');
                     pointNameInput.value = this.dataset.name;
                     pointAddressInput.value = this.dataset.addr;
                     pointCityInput.value = this.dataset.city;
@@ -1202,6 +1222,7 @@
             pointPartnerInput.readOnly = true;
             pointPartnerInput.style.background = '#f5f5f5';
             partnerBlock.style.display = 'none';
+            setPointType('База');
 
             pointNameInput.readOnly = true; pointAddressInput.readOnly = true;
             pointCityInput.readOnly = true; pointCoordsInput.readOnly = true;
@@ -1533,12 +1554,11 @@
     // 10. МОНИТОРИНГ КОНКУРЕНТОВ (независимый модуль)
     // =====================================================
     (function() {
-        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwucHNYapbe4ltaMe7Us31CpVmZtNKBmu808-4AlfPtMYPUHmmaBsLZRf1b0AsCQ9X4/exec';
+        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAVaGvi3c7k43SF6xp4d99by-__K0DwUs-mt4G2mO3EETzBUH3FtFtHyMud8n07onW/exec';
         const STORAGE_KEY_MON_QUEUE = 'offline_monitoring_queue';
         const STORAGE_KEY_MON_CACHE = 'offline_monitoring_cache';
         const URL_READY = !MONITORING_SCRIPT_URL.includes('PASTE_YOUR');
 
-        // ---- Кнопка ----
         window.updateMonBtnState = function() {
             const btn = document.getElementById('monitoringBtn');
             if (!btn) return;
@@ -1559,7 +1579,6 @@
             _mgrEl.addEventListener('blur',   window.updateMonBtnState);
         }
 
-        // ---- Кэш мониторинга ----
         function loadMonCache() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY_MON_CACHE);
@@ -1604,7 +1623,6 @@
             return false;
         };
 
-        // ---- Очередь ----
         function loadMonQueue() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY_MON_QUEUE);
@@ -1629,7 +1647,8 @@
                 pointAddress: report.pointAddress || '',
                 manager: report.manager || '',
                 id: report.id || '',
-                timestamp: report.timestamp || new Date().toISOString()
+                timestamp: report.timestamp || new Date().toISOString(),
+                pointType: report.pointType || ''
             });
             return MONITORING_SCRIPT_URL + '?' + params.toString();
         }
@@ -1698,7 +1717,6 @@
             badge.className = (count === 0) ? 'online' : '';
         }
 
-        // ---- UI ----
         const monBtn       = document.getElementById('monitoringBtn');
         const monModal     = document.getElementById('monitoringModal');
         const monName      = document.getElementById('competitorName');
@@ -1820,9 +1838,10 @@
             let html = '<div class="mon-prev-title">🔎 В этой точке ранее находили:</div>';
             entries.forEach(e => {
                 const dateStr = formatDateShort(e.timestamp);
+                const typeLabel = e.pointType ? ` <span style="color:#888;font-size:11px;">[${escapeHtml(e.pointType)}]</span>` : '';
                 html += `<div class="mon-prev-item">
                     <b>${escapeHtml(e.competitor)}</b> — ${e.standsCount} стенд(ов)
-                    ${dateStr ? '<span class="mon-prev-date">(' + dateStr + ')</span>' : ''}
+                    ${dateStr ? '<span class="mon-prev-date">(' + dateStr + ')</span>' : ''}${typeLabel}
                     ${e.comment ? '<br><span style="color:#777">' + escapeHtml(e.comment) + '</span>' : ''}
                 </div>`;
             });
@@ -1835,8 +1854,11 @@
             const name = (document.getElementById('point_name')?.value || '').trim();
             const addr = (document.getElementById('point_address')?.value || '').trim();
             const mgr  = (document.getElementById('manager')?.value || '').trim();
+            const ptype = (document.getElementById('point_type')?.value || 'База');
+            const badgeCls = (ptype === 'Новая') ? 'new' : 'base';
             monContextInfo.innerHTML =
-                `<div>🏬 Точка: <b>${escapeHtml(name || '—')}</b></div>` +
+                `<div>🏬 Точка: <b>${escapeHtml(name || '—')}</b>` +
+                `<span class="mon-point-type-badge ${badgeCls}">${escapeHtml(ptype)}</span></div>` +
                 `<div>📍 Адрес: <b>${escapeHtml(addr || '—')}</b></div>` +
                 `<div>👤 Менеджер: <b>${escapeHtml(mgr || '—')}</b></div>`;
         }
@@ -1848,7 +1870,6 @@
             monModal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            // Если кэша ещё нет — попробуем подгрузить
             const cache = loadMonCache();
             if ((!cache || cache.length === 0) && navigator.onLine && URL_READY) {
                 const ok = await window.refreshMonitoringCache();
@@ -1891,7 +1912,6 @@
             if (e.key === 'Escape' && monModal.classList.contains('active')) closeMonModal();
         });
 
-        // ---- Автодополнение конкурентов ----
         if (monName) {
             monName.addEventListener('input', function() {
                 this.classList.remove('input-error');
@@ -1928,6 +1948,7 @@
             const pointName    = (document.getElementById('point_name')?.value || '').trim();
             const pointAddress = (document.getElementById('point_address')?.value || '').trim();
             const manager      = (document.getElementById('manager')?.value || '').trim();
+            const pointType    = (document.getElementById('point_type')?.value || 'База');
 
             const report = {
                 type: 'monitoring',
@@ -1936,7 +1957,8 @@
                 comment: comment,
                 pointName: pointName,
                 pointAddress: pointAddress,
-                manager: manager
+                manager: manager,
+                pointType: pointType
             };
 
             const newId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -1956,7 +1978,8 @@
                 competitor: comp,
                 standsCount: stands,
                 comment: comment,
-                id: newId
+                id: newId,
+                pointType: pointType
             });
             saveMonCache(cacheRecords);
             refreshCompetitorList();
@@ -1987,7 +2010,8 @@
                 comment: 'Тест ' + new Date().toISOString(),
                 pointName: 'ТЕСТ-точка',
                 pointAddress: 'ТЕСТ-адрес',
-                manager: 'ТЕСТ'
+                manager: 'ТЕСТ',
+                pointType: 'Новая'
             };
             const url = buildMonUrl(test);
             console.log('GET URL:', url);
@@ -2002,7 +2026,6 @@
             }
         };
 
-        // ---- Инициализация ----
         refreshCompetitorList();
         updateMonBadge();
         window.updateMonBtnState();
