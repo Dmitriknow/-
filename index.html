@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="7">
+    <meta name="app-version" content="8">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -174,12 +174,12 @@
         }
         .monitoring-btn-row { display: flex; gap: 10px; margin-top: 18px; }
         .monitoring-btn-row button {
-            flex: 1; padding: 12px; font-size: 16px;
+            padding: 12px; font-size: 15px;
             border: none; border-radius: 6px; cursor: pointer;
         }
-        .mon-ok { background: #4CAF50; color: #fff; }
+        .mon-ok { background: #4CAF50; color: #fff; flex: 2; }
         .mon-ok:hover { background: #388E3C; }
-        .mon-cancel { background: #999; color: #fff; }
+        .mon-cancel { background: #999; color: #fff; flex: 1; }
         .mon-cancel:hover { background: #777; }
 
         .monitoring-session-list { margin-top: 15px; }
@@ -343,7 +343,7 @@
         <textarea id="competitorComment" rows="2" placeholder="..."></textarea>
 
         <div class="monitoring-btn-row">
-            <button id="monitoringAddBtn" class="mon-ok">Добавить</button>
+            <button id="monitoringAddBtn" class="mon-ok">Отправить данные по конкуренту</button>
             <button id="monitoringCancelBtn" class="mon-cancel">Закрыть</button>
         </div>
 
