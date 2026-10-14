@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="10">
+    <meta name="app-version" content="11">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -1554,7 +1554,7 @@
     // 10. МОНИТОРИНГ КОНКУРЕНТОВ (независимый модуль)
     // =====================================================
     (function() {
-        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwko4ZU_ii6EOYOxHKjN-3XCxenh0yNzXShrq-ouaHDMZVV5P34p_93GvuhedOByove/exec';
+        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8Of75UVav16doOrPG0Skyj2y0To16u-mnp9iTxUllF13Dfgoye-FkPAOITyR4O6Bd/exec';
         const STORAGE_KEY_MON_QUEUE = 'offline_monitoring_queue';
         const STORAGE_KEY_MON_CACHE = 'offline_monitoring_cache';
         const URL_READY = !MONITORING_SCRIPT_URL.includes('PASTE_YOUR');
@@ -1645,6 +1645,7 @@
                 comment: report.comment || '',
                 pointName: report.pointName || '',
                 pointAddress: report.pointAddress || '',
+                pointCity: report.pointCity || '',
                 manager: report.manager || '',
                 id: report.id || '',
                 timestamp: report.timestamp || new Date().toISOString(),
@@ -1947,6 +1948,7 @@
 
             const pointName    = (document.getElementById('point_name')?.value || '').trim();
             const pointAddress = (document.getElementById('point_address')?.value || '').trim();
+            const pointCity    = (document.getElementById('point_city')?.value || '').trim();
             const manager      = (document.getElementById('manager')?.value || '').trim();
             const pointType    = (document.getElementById('point_type')?.value || 'База');
 
@@ -1957,7 +1959,7 @@
                 comment: comment,
                 pointName: pointName,
                 pointAddress: pointAddress,
-                pointCity: pointCity, 
+                pointCity: pointCity,
                 manager: manager,
                 pointType: pointType
             };
@@ -1976,6 +1978,7 @@
                 manager: manager,
                 pointName: pointName,
                 pointAddress: pointAddress,
+                pointCity: pointCity,
                 competitor: comp,
                 standsCount: stands,
                 comment: comment,
@@ -2011,6 +2014,7 @@
                 comment: 'Тест ' + new Date().toISOString(),
                 pointName: 'ТЕСТ-точка',
                 pointAddress: 'ТЕСТ-адрес',
+                pointCity: 'ТЕСТ-город',
                 manager: 'ТЕСТ',
                 pointType: 'Новая'
             };
