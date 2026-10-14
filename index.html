@@ -202,6 +202,64 @@
             margin-top: 10px;
         }
         .mon-context-info b { color: #333; }
+
+        /* Подсказки по конкурентам */
+        .competitor-suggest-list {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+            margin-top: 4px;
+        }
+        .competitor-suggest-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .competitor-suggest-item:last-child { border-bottom: none; }
+        .competitor-suggest-item:hover { background: #f0f0f0; }
+        .competitor-suggest-item .comp-name { flex: 1; }
+        .competitor-suggest-item .highlight-match { font-weight: bold; background: #ffeb3b; }
+        .competitor-prev-badge {
+            background: #e1bee7;
+            color: #4a148c;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+
+        /* Блок «ранее находили в этой точке» */
+        .mon-prev-block {
+            margin-top: 12px;
+            padding: 10px;
+            background: #faf5ff;
+            border-left: 3px solid #9c27b0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .mon-prev-block .mon-prev-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a148c;
+        }
+        .mon-prev-item {
+            padding: 4px 0;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+        .mon-prev-item:last-child { border-bottom: none; }
+        .mon-prev-item .mon-prev-date {
+            color: #999;
+            font-size: 11px;
+            margin-left: 6px;
+        }
     </style>
 </head>
 <body>
@@ -333,8 +391,11 @@
 
         <div class="mon-context-info" id="monContextInfo"></div>
 
+        <div class="mon-prev-block" id="monPreviousVisits" style="display:none;"></div>
+
         <label for="competitorName">Конкурент:</label>
-        <input type="text" id="competitorName" placeholder="Название конкурента">
+        <input type="text" id="competitorName" placeholder="Начните вводить название..." autocomplete="off">
+        <div id="competitorSuggestList" class="competitor-suggest-list"></div>
 
         <label for="competitorStands">Кол-во стендов:</label>
         <input type="number" id="competitorStands" min="0" step="1" placeholder="0">
@@ -1086,24 +1147,26 @@
 
             const results = await Promise.allSettled([
                 loadPointsFromNetwork(),
-                refreshVisitsCache()
+                refreshVisitsCache(),
+                window.refreshMonitoringCache ? window.refreshMonitoringCache() : Promise.resolve(false)
             ]);
 
             const pointsOk = results[0].status === 'fulfilled' && results[0].value === true;
             const visitsOk = results[1].status === 'fulfilled' && results[1].value === true;
+            const monOk    = results[2] && results[2].status === 'fulfilled' && results[2].value === true;
 
             console.log('Обновление базы:', {
                 points: results[0].status, pointsOk,
                 visits: results[1].status, visitsOk,
-                visitsReason: results[1].reason ? String(results[1].reason) : null
+                monitoring: results[2] ? results[2].status : null, monOk
             });
 
-            if (pointsOk && visitsOk) {
-                showToast('База точек и визитов обновлена!', 'success');
-            } else if (pointsOk) {
-                showToast('Точки обновлены, визиты не удалось загрузить.', 'warning');
-            } else if (visitsOk) {
-                showToast('Визиты обновлены, точки не удалось загрузить.', 'warning');
+            if (pointsOk && visitsOk && monOk) {
+                showToast('База точек, визитов и мониторинга обновлена!', 'success');
+            } else if (pointsOk && !monOk) {
+                showToast('Точки и визиты обновлены, мониторинг не удалось загрузить.', 'warning');
+            } else if (pointsOk || visitsOk || monOk) {
+                showToast('Часть данных обновлена.', 'warning');
             } else {
                 showToast('Не удалось обновить базу. Проверьте интернет.', 'error');
             }
@@ -1470,11 +1533,12 @@
     // 10. МОНИТОРИНГ КОНКУРЕНТОВ (независимый модуль)
     // =====================================================
     (function() {
-        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2StQXmcjms1I7Ma9toQTmGDuKjd5SuDgfp8BQBL9qB-mqGm-P_EVncxchM-ijay6y/exec';
+        const MONITORING_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqQjAFhsL1V87uD_bHnU15FaWWQhUnxVjEl5wKkm7hWg_DVPd4LJeSJrPEDgDvxpFl/exec';
         const STORAGE_KEY_MON_QUEUE = 'offline_monitoring_queue';
+        const STORAGE_KEY_MON_CACHE = 'offline_monitoring_cache';
         const URL_READY = !MONITORING_SCRIPT_URL.includes('PASTE_YOUR');
 
-        // --- Управление активностью кнопки мониторинга ---
+        // ---- Кнопка ----
         window.updateMonBtnState = function() {
             const btn = document.getElementById('monitoringBtn');
             if (!btn) return;
@@ -1495,6 +1559,52 @@
             _mgrEl.addEventListener('blur',   window.updateMonBtnState);
         }
 
+        // ---- Кэш мониторинга ----
+        function loadMonCache() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY_MON_CACHE);
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return null;
+        }
+        function saveMonCache(records) {
+            try { localStorage.setItem(STORAGE_KEY_MON_CACHE, JSON.stringify(records)); } catch (e) {}
+        }
+
+        async function fetchMonitoringFromNetwork() {
+            if (!URL_READY) return null;
+            try {
+                const url = MONITORING_SCRIPT_URL + '?action=getMonitoring&v=' + Date.now();
+                const resp = await fetch(url, { method: 'GET', cache: 'no-store' });
+                if (!resp.ok) {
+                    console.warn('Monitoring fetch HTTP ' + resp.status);
+                    return null;
+                }
+                const data = await resp.json();
+                if (Array.isArray(data)) return data;
+                if (data && data.error) console.warn('Monitoring server error:', data.error);
+                return null;
+            } catch (e) {
+                console.warn('Monitoring fetch failed:', e);
+                return null;
+            }
+        }
+
+        window.refreshMonitoringCache = async function() {
+            const fresh = await fetchMonitoringFromNetwork();
+            if (fresh && Array.isArray(fresh)) {
+                saveMonCache(fresh);
+                refreshCompetitorList();
+                console.log('Кэш мониторинга обновлён:', fresh.length, 'записей');
+                return true;
+            }
+            return false;
+        };
+
+        // ---- Очередь ----
         function loadMonQueue() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY_MON_QUEUE);
@@ -1588,6 +1698,7 @@
             badge.className = (count === 0) ? 'online' : '';
         }
 
+        // ---- UI ----
         const monBtn       = document.getElementById('monitoringBtn');
         const monModal     = document.getElementById('monitoringModal');
         const monName      = document.getElementById('competitorName');
@@ -1597,8 +1708,127 @@
         const monCancelBtn = document.getElementById('monitoringCancelBtn');
         const monSessionList = document.getElementById('monitoringSessionList');
         const monContextInfo = document.getElementById('monContextInfo');
+        const monPrevBlock = document.getElementById('monPreviousVisits');
+        const competitorSuggestList = document.getElementById('competitorSuggestList');
 
         let sessionEntries = [];
+        let allCompetitors = [];
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+            }[c]));
+        }
+
+        function extractUniqueCompetitors(records) {
+            const set = new Set();
+            (records || []).forEach(r => {
+                if (r.competitor && r.competitor.trim()) set.add(r.competitor.trim());
+            });
+            return Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
+        }
+
+        function refreshCompetitorList() {
+            const records = loadMonCache() || [];
+            allCompetitors = extractUniqueCompetitors(records);
+        }
+
+        function getCurrentPointKey() {
+            const name = (document.getElementById('point_name')?.value || '').trim();
+            const addr = (document.getElementById('point_address')?.value || '').trim();
+            const norm = s => (s || '').trim().toLowerCase();
+            return norm(name) + '|' + norm(addr);
+        }
+
+        function getPreviousCompetitorsForPoint() {
+            const records = loadMonCache() || [];
+            const key = getCurrentPointKey();
+            const norm = s => (s || '').trim().toLowerCase();
+            const map = {};
+            records.forEach(r => {
+                const rkey = norm(r.pointName) + '|' + norm(r.pointAddress);
+                if (rkey !== key) return;
+                const c = (r.competitor || '').trim();
+                if (!c) return;
+                const ts = Date.parse(r.timestamp) || 0;
+                const existing = map[c];
+                if (!existing || ts > (Date.parse(existing.timestamp) || 0)) {
+                    map[c] = r;
+                }
+            });
+            return map;
+        }
+
+        function formatDateShort(ts) {
+            try {
+                const d = new Date(ts);
+                if (isNaN(d.getTime())) return '';
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                return dd + '.' + mm + '.' + d.getFullYear();
+            } catch (e) { return ''; }
+        }
+
+        function renderCompetitorSuggestions(query) {
+            if (!competitorSuggestList) return;
+            const q = (query || '').trim().toLowerCase();
+            if (q.length === 0) { competitorSuggestList.style.display = 'none'; return; }
+
+            const prevMap = getPreviousCompetitorsForPoint();
+            const matches = allCompetitors.filter(c => c.toLowerCase().includes(q)).slice(0, 10);
+            if (matches.length === 0) { competitorSuggestList.style.display = 'none'; return; }
+
+            let html = '';
+            matches.forEach(c => {
+                const lower = c.toLowerCase();
+                const idx = lower.indexOf(q);
+                let display = escapeHtml(c);
+                if (idx !== -1) {
+                    display = escapeHtml(c.substring(0, idx)) +
+                        '<span class="highlight-match">' + escapeHtml(c.substring(idx, idx + q.length)) + '</span>' +
+                        escapeHtml(c.substring(idx + q.length));
+                }
+                const prev = prevMap[c];
+                const badge = prev
+                    ? `<span class="competitor-prev-badge">было: ${prev.standsCount}</span>`
+                    : '';
+                html += `<div class="competitor-suggest-item" data-name="${escapeHtml(c)}">
+                    <span class="comp-name">${display}</span>${badge}
+                </div>`;
+            });
+            competitorSuggestList.innerHTML = html;
+            competitorSuggestList.style.display = 'block';
+            competitorSuggestList.querySelectorAll('.competitor-suggest-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    monName.value = this.dataset.name;
+                    competitorSuggestList.style.display = 'none';
+                    monName.classList.remove('input-error');
+                });
+            });
+        }
+
+        function renderPreviousVisitsBlock() {
+            if (!monPrevBlock) return;
+            const prevMap = getPreviousCompetitorsForPoint();
+            const entries = Object.values(prevMap);
+            if (entries.length === 0) {
+                monPrevBlock.style.display = 'none';
+                monPrevBlock.innerHTML = '';
+                return;
+            }
+            entries.sort((a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0));
+            let html = '<div class="mon-prev-title">🔎 В этой точке ранее находили:</div>';
+            entries.forEach(e => {
+                const dateStr = formatDateShort(e.timestamp);
+                html += `<div class="mon-prev-item">
+                    <b>${escapeHtml(e.competitor)}</b> — ${e.standsCount} стенд(ов)
+                    ${dateStr ? '<span class="mon-prev-date">(' + dateStr + ')</span>' : ''}
+                    ${e.comment ? '<br><span style="color:#777">' + escapeHtml(e.comment) + '</span>' : ''}
+                </div>`;
+            });
+            monPrevBlock.innerHTML = html;
+            monPrevBlock.style.display = 'block';
+        }
 
         function renderContextInfo() {
             if (!monContextInfo) return;
@@ -1611,10 +1841,20 @@
                 `<div>👤 Менеджер: <b>${escapeHtml(mgr || '—')}</b></div>`;
         }
 
-        function openMonModal() {
+        async function openMonModal() {
             renderContextInfo();
+            refreshCompetitorList();
+            renderPreviousVisitsBlock();
             monModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            // Если кэша ещё нет — попробуем подгрузить
+            const cache = loadMonCache();
+            if ((!cache || cache.length === 0) && navigator.onLine && URL_READY) {
+                const ok = await window.refreshMonitoringCache();
+                if (ok) renderPreviousVisitsBlock();
+            }
+
             setTimeout(() => monName.focus(), 100);
         }
         function closeMonModal() {
@@ -1625,13 +1865,9 @@
             monComment.value = '';
             monName.classList.remove('input-error');
             monStands.classList.remove('input-error');
+            if (competitorSuggestList) competitorSuggestList.style.display = 'none';
             sessionEntries = [];
             renderSessionList();
-        }
-        function escapeHtml(s) {
-            return String(s).replace(/[&<>"']/g, c => ({
-                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-            }[c]));
         }
         function renderSessionList() {
             if (sessionEntries.length === 0) { monSessionList.innerHTML = ''; return; }
@@ -1654,6 +1890,22 @@
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape' && monModal.classList.contains('active')) closeMonModal();
         });
+
+        // ---- Автодополнение конкурентов ----
+        if (monName) {
+            monName.addEventListener('input', function() {
+                this.classList.remove('input-error');
+                renderCompetitorSuggestions(this.value);
+            });
+            monName.addEventListener('focus', function() {
+                if (this.value.trim().length > 0) renderCompetitorSuggestions(this.value);
+            });
+            monName.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (competitorSuggestList) competitorSuggestList.style.display = 'none';
+                }, 200);
+            });
+        }
 
         monAddBtn.addEventListener('click', async () => {
             const comp    = monName.value.trim();
@@ -1687,15 +1939,35 @@
                 manager: manager
             };
 
-            await addMonReport(report);
+            const newId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            const timestamp = new Date().toISOString();
+
+            await addMonReport({ ...report, id: newId, timestamp });
             sessionEntries.push(report);
             renderSessionList();
+
+            // Оптимистично обновляем локальный кэш
+            const cacheRecords = loadMonCache() || [];
+            cacheRecords.push({
+                timestamp: timestamp,
+                manager: manager,
+                pointName: pointName,
+                pointAddress: pointAddress,
+                competitor: comp,
+                standsCount: stands,
+                comment: comment,
+                id: newId
+            });
+            saveMonCache(cacheRecords);
+            refreshCompetitorList();
+            renderPreviousVisitsBlock();
 
             monName.value = '';
             monStands.value = '';
             monComment.value = '';
             monName.classList.remove('input-error');
             monStands.classList.remove('input-error');
+            if (competitorSuggestList) competitorSuggestList.style.display = 'none';
             monName.focus();
 
             showToast('Запись добавлена в очередь', 'success');
@@ -1703,7 +1975,10 @@
             if (navigator.onLine) syncMonReports();
         });
 
-        window.addEventListener('online', () => { syncMonReports(); });
+        window.addEventListener('online', () => {
+            syncMonReports();
+            if (typeof window.refreshMonitoringCache === 'function') window.refreshMonitoringCache();
+        });
 
         window.monitoringTest = async function() {
             const test = {
@@ -1727,9 +2002,14 @@
             }
         };
 
+        // ---- Инициализация ----
+        refreshCompetitorList();
         updateMonBadge();
         window.updateMonBtnState();
-        if (navigator.onLine) syncMonReports();
+        if (navigator.onLine) {
+            if (URL_READY) window.refreshMonitoringCache();
+            syncMonReports();
+        }
     })();
 </script>
 </body>
