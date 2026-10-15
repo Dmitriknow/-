@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="12">
+    <meta name="app-version" content="11">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -103,7 +103,7 @@
         .repeat-cancel { background: #999; color: #fff; }
         #repeatVisitInfo { font-size: 13px; color: #666; margin-top: 8px; min-height: 18px; }
 
-        /* ==== Мониторинг конкурентов ==== */
+        /* ==== Кнопки действий ==== */
         #monitoringBtn {
             padding: 12px 20px;
             background: #673AB7;
@@ -121,6 +121,25 @@
             opacity: 0.7;
         }
         #monitoringBtn:disabled:hover { background: #b0a5c9; }
+
+        #checklistBtn {
+            padding: 12px 20px;
+            background: #2196F3;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #checklistBtn:hover { background: #1976D2; }
+        #checklistBtn:disabled {
+            background: #90b8d8;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #checklistBtn:disabled:hover { background: #90b8d8; }
+        #checklistBtn.active { background: #0D47A1; }
 
         #monitoring-queue-badge {
             background: #dc3545;
@@ -316,58 +335,61 @@
 <div style="display: flex; align-items: center; gap: 8px; margin: 15px 0 10px; flex-wrap: wrap;">
     <button id="monitoringBtn" disabled title="Сначала выберите точку (название + адрес) и укажите менеджера">📊 Мониторинг конкурентов</button>
     <span id="monitoring-queue-badge">0</span>
+    <button id="checklistBtn" disabled title="Сначала выберите точку (название + адрес) и укажите менеджера">📋 Чек лист Vizavi</button>
 </div>
 
-<hr>
-<div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-    <h3 style="margin: 0;">Наличие образцов</h3>
-</div>
+<div id="checklistSection" style="display:none;">
+    <hr>
+    <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+        <h3 style="margin: 0;">Наличие образцов</h3>
+    </div>
 
-<div id="itemSearchContainer">
-    <input type="text" id="itemSearchInput" placeholder="Введите артикул...">
-    <div id="itemSuggestList" class="suggest-list"></div>
-</div>
-<div id="searchOverlay"></div>
+    <div id="itemSearchContainer">
+        <input type="text" id="itemSearchInput" placeholder="Введите артикул...">
+        <div id="itemSuggestList" class="suggest-list"></div>
+    </div>
+    <div id="searchOverlay"></div>
 
-<div class="stands-section">
-    <div class="section-title">Стенды</div>
-    <div class="stands-container">
-        <div class="stand-item">
-            <img src="https://static.tildacdn.com/tild3535-3466-4234-b739-343738623734/5278750716912667799.png" alt="Стенд гребенка" onclick="openImage(this.src)">
-            <div class="stand-info">
-                <span class="stand-name">Стенд «Гребенка»</span>
-                <div class="stand-control">
-                    <button class="stand-minus" data-target="stand1">−</button>
-                    <input type="number" id="stand1" class="stand-count" value="0" min="0" step="1">
-                    <button class="stand-plus" data-target="stand1">+</button>
+    <div class="stands-section">
+        <div class="section-title">Стенды</div>
+        <div class="stands-container">
+            <div class="stand-item">
+                <img src="https://static.tildacdn.com/tild3535-3466-4234-b739-343738623734/5278750716912667799.png" alt="Стенд гребенка" onclick="openImage(this.src)">
+                <div class="stand-info">
+                    <span class="stand-name">Стенд «Гребенка»</span>
+                    <div class="stand-control">
+                        <button class="stand-minus" data-target="stand1">−</button>
+                        <input type="number" id="stand1" class="stand-count" value="0" min="0" step="1">
+                        <button class="stand-plus" data-target="stand1">+</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="stand-item">
-            <img src="https://static.tildacdn.com/tild6631-3564-4636-b539-363163313831/___1.jpg" alt="Стенд выкатной" onclick="openImage(this.src)">
-            <div class="stand-info">
-                <span class="stand-name">Стенд «Выкатной»</span>
-                <div class="stand-control">
-                    <button class="stand-minus" data-target="stand2">−</button>
-                    <input type="number" id="stand2" class="stand-count" value="0" min="0" step="1">
-                    <button class="stand-plus" data-target="stand2">+</button>
+            <div class="stand-item">
+                <img src="https://static.tildacdn.com/tild6631-3564-4636-b539-363163313831/___1.jpg" alt="Стенд выкатной" onclick="openImage(this.src)">
+                <div class="stand-info">
+                    <span class="stand-name">Стенд «Выкатной»</span>
+                    <div class="stand-control">
+                        <button class="stand-minus" data-target="stand2">−</button>
+                        <input type="number" id="stand2" class="stand-count" value="0" min="0" step="1">
+                        <button class="stand-plus" data-target="stand2">+</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+        <button id="selectNoAllBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #f44336; color: white;">❌ Нет выставки</button>
+        <button id="repeatVisitBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #2196F3; color: white;">🔁 Повторный визит</button>
+    </div>
+
+    <div id="checklist"></div>
+
+    <label for="comment">Задачи на следующий визит:</label>
+    <textarea id="comment" rows="3" placeholder="Введите задачи на следующий визит..."></textarea>
+
+    <button id="submitBtn">📤 Добавить в очередь и отправить (при наличии сети)</button>
 </div>
-
-<div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-    <button id="selectNoAllBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #f44336; color: white;">❌ Нет выставки</button>
-    <button id="repeatVisitBtn" style="padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; background: #2196F3; color: white;">🔁 Повторный визит</button>
-</div>
-
-<div id="checklist"></div>
-
-<label for="comment">Задачи на следующий визит:</label>
-<textarea id="comment" rows="3" placeholder="Введите задачи на следующий визит..."></textarea>
-
-<button id="submitBtn">📤 Добавить в очередь и отправить (при наличии сети)</button>
 
 <div id="result">
     <h4>Данные для отправки:</h4>
@@ -423,7 +445,7 @@
 
 <div id="toast-container"></div>
 
-<span id="searchToggle">🔍</span>
+<span id="searchToggle" style="display:none;">🔍</span>
 
 <script>
     // =====================================================
@@ -957,6 +979,11 @@
         const syncBtn = document.getElementById('sync-btn');
         const refreshPointsBtn = document.getElementById('refreshPointsBtn');
 
+        // Элементы «скрываемого» чек-листа
+        const checklistSection = document.getElementById('checklistSection');
+        const checklistBtn = document.getElementById('checklistBtn');
+        const searchToggleEl = document.getElementById('searchToggle');
+
         const managers = [
             'Кошелев Дмитрий','Нигматулина Наталья','Измайлова Оксана',
             'Мухтеремова Елена','Варламичев Данила','Балахонов Владислав','Пушин Дмитрий'
@@ -1233,9 +1260,34 @@
             suggestList.style.display = 'none';
             isManual = false;
             closeSearchPopup();
+
+            // Сворачиваем чек-лист и прячем 🔍
+            checklistSection.style.display = 'none';
+            checklistBtn.classList.remove('active');
+            searchToggleEl.style.display = 'none';
+
             searchInput.blur();
             if (window.updateMonBtnState) window.updateMonBtnState();
         }
+
+        // === Тоггл секции чек-листа ===
+        checklistBtn.addEventListener('click', function() {
+            if (checklistBtn.disabled) return;
+            const isOpen = checklistSection.style.display !== 'none';
+            if (isOpen) {
+                checklistSection.style.display = 'none';
+                checklistBtn.classList.remove('active');
+                searchToggleEl.style.display = 'none';
+                closeSearchPopup();
+            } else {
+                checklistSection.style.display = 'block';
+                checklistBtn.classList.add('active');
+                searchToggleEl.style.display = 'flex';
+                setTimeout(() => {
+                    checklistSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
+        });
 
         const searchToggle = document.getElementById('searchToggle');
         const searchContainer = document.getElementById('itemSearchContainer');
@@ -1559,17 +1611,37 @@
         const STORAGE_KEY_MON_CACHE = 'offline_monitoring_cache';
         const URL_READY = !MONITORING_SCRIPT_URL.includes('PASTE_YOUR');
 
+        // Общая функция — управляет состоянием ОБЕИХ кнопок действий
         window.updateMonBtnState = function() {
-            const btn = document.getElementById('monitoringBtn');
-            if (!btn) return;
             const name = (document.getElementById('point_name')?.value || '').trim();
             const addr = (document.getElementById('point_address')?.value || '').trim();
             const mgr  = (document.getElementById('manager')?.value || '').trim();
             const ready = !!(name && addr && mgr);
-            btn.disabled = !ready;
-            btn.title = ready
-                ? 'Открыть мониторинг конкурентов'
-                : 'Сначала выберите точку (название + адрес) и укажите менеджера';
+
+            const monBtn = document.getElementById('monitoringBtn');
+            if (monBtn) {
+                monBtn.disabled = !ready;
+                monBtn.title = ready
+                    ? 'Открыть мониторинг конкурентов'
+                    : 'Сначала выберите точку (название + адрес) и укажите менеджера';
+            }
+
+            const chkBtn = document.getElementById('checklistBtn');
+            if (chkBtn) {
+                chkBtn.disabled = !ready;
+                chkBtn.title = ready
+                    ? 'Открыть чек-лист наличия образцов'
+                    : 'Сначала выберите точку (название + адрес) и укажите менеджера';
+            }
+
+            // Если точка не готова — сворачиваем чек-лист и прячем 🔍
+            if (!ready) {
+                const section = document.getElementById('checklistSection');
+                if (section) section.style.display = 'none';
+                if (chkBtn) chkBtn.classList.remove('active');
+                const st = document.getElementById('searchToggle');
+                if (st) st.style.display = 'none';
+            }
         };
 
         const _mgrEl = document.getElementById('manager');
