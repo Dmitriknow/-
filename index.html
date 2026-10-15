@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Чек-лист наличия образцов</title>
-    <meta name="app-version" content="13">
+    <meta name="app-version" content="14">
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
         .item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -35,11 +35,7 @@
         .search-row button:hover { background: #F57C00; }
         #submitBtn { width: 100%; padding: 15px; background: #4CAF50; color: white; font-size: 18px; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; }
         #submitBtn:hover { background: #388E3C; }
-        #result { margin-top: 20px; background: #e0e0e0; padding: 10px; border-radius: 5px; display: none; }
-        #result pre { white-space: pre-wrap; word-wrap: break-word; }
         hr { margin: 20px 0; }
-        .copy-btn { margin-top: 10px; padding: 8px 15px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .copy-btn:hover { background: #0b7dda; }
         .section-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px; padding: 5px 10px; background: #f5f5f5; border-left: 4px solid #2196F3; }
         .stands-section { margin: 20px 0 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
         .stands-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
@@ -389,12 +385,6 @@
     <textarea id="comment" rows="3" placeholder="Введите задачи на следующий визит..."></textarea>
 
     <button id="submitBtn">📤 Добавить в очередь и отправить (при наличии сети)</button>
-</div>
-
-<div id="result">
-    <h4>Данные для отправки:</h4>
-    <pre id="output"></pre>
-    <button id="copyBtn" class="copy-btn">📋 Скопировать текст</button>
 </div>
 
 <div class="modal-overlay" id="imageModal">
@@ -973,9 +963,6 @@
         const commentInput = document.getElementById('comment');
         const checklistDiv = document.getElementById('checklist');
         const submitBtn = document.getElementById('submitBtn');
-        const resultDiv = document.getElementById('result');
-        const outputPre = document.getElementById('output');
-        const copyBtn = document.getElementById('copyBtn');
         const syncBtn = document.getElementById('sync-btn');
         const refreshPointsBtn = document.getElementById('refreshPointsBtn');
 
@@ -1513,21 +1500,6 @@
             };
             await addReportToQueue(report);
 
-            let reportText = `Торговая точка: ${name}\n`;
-            reportText += `Партнер: ${partner || '—'}\n`;
-            reportText += `Адрес: ${address}\n`;
-            reportText += `Город: ${city || 'не указан'}\n`;
-            reportText += `Координаты: ${coords || 'не указаны'}\n`;
-            reportText += `Менеджер: ${manager || 'не указан'}\n`;
-            reportText += `Комментарий: ${comment || '—'}\n\n`;
-            reportText += `Стенд «гребенка»: ${stand1Count} шт.\n`;
-            reportText += `Стенд «Выкатной»: ${stand2Count} шт.\n\n`;
-            document.querySelectorAll('.item').forEach(item => {
-                const itemName = item.querySelector('.item-name').textContent;
-                reportText += `${itemName} → ${statusByName[itemName] || 'Нет'}\n`;
-            });
-            outputPre.textContent = reportText;
-            resultDiv.style.display = 'block';
             showToast('Отчёт принят', 'success');
             resetForm();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1535,20 +1507,6 @@
             if (navigator.onLine) await syncAllReports();
             else updateStatus('Отчёт сохранён в очереди (нет интернета)');
         });
-
-        copyBtn.addEventListener('click', function() {
-            const text = outputPre.textContent;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => showToast('Текст скопирован!', 'success')).catch(() => fallbackCopy(text));
-            } else fallbackCopy(text);
-        });
-        function fallbackCopy(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text; document.body.appendChild(textarea);
-            textarea.select(); document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showToast('Текст скопирован!', 'success');
-        }
 
         syncBtn.addEventListener('click', function() { syncAllReports(); });
 
